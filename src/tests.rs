@@ -7,7 +7,8 @@ mod tests {
     #[test]
     fn storing_and_adding_local_integers() {
         let opcodes: Vec<u8> = vec![
-            opcode::ICONST_2,
+            opcode::BIPUSH,
+            0x10,
             opcode::ISTORE_1,
             opcode::ICONST_4,
             opcode::ISTORE,
@@ -22,6 +23,6 @@ mod tests {
         ];
 
         let interpreter_result = interpreter::interpret(&opcodes);
-        assert_eq!(interpreter_result, Some(JvmValue::Int { val: 6 }));
+        assert_eq!(interpreter_result, Some(JvmValue::Int { val: 20 }));
     }
 }

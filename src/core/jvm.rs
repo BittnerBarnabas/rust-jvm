@@ -11,6 +11,7 @@ pub enum JvmValue {
     Double { val: f64 },
     Char { val: char },
     ObjRef { val: usize },
+    ReturnAddr { val: usize },
 }
 
 impl JvmValue {
@@ -31,6 +32,7 @@ impl fmt::Display for JvmValue {
             JvmValue::Double { val: v } => write!(f, "{}", v),
             JvmValue::Char { val: v } => write!(f, "{}", v),
             JvmValue::ObjRef { val: v } => write!(f, "{}", v),
+            JvmValue::ReturnAddr { val: v } => write!(f, "{}", v),
         }
     }
 }

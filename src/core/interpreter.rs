@@ -68,6 +68,12 @@ pub fn interpret(byte_codes: &Vec<u8>) -> Option<JvmValue> {
     loop {
         match byte_codes.get(current) {
             Some(byte_code) => match byte_code {
+                &opcode::BIPUSH => {
+                    current += 1;
+                    eval_stack.push(JvmValue::Int {
+                        val: byte_codes[current] as i32,
+                    })
+                }
                 &opcode::IADD => eval_stack.add(),
                 &opcode::ICONST_M1 => eval_stack.i_constant(-1),
                 &opcode::ICONST_0 => eval_stack.i_constant(0),
