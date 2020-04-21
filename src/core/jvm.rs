@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum JvmValue {
     Boolean { val: bool },
     Byte { val: i8 },
@@ -11,6 +11,12 @@ pub enum JvmValue {
     Double { val: f64 },
     Char { val: char },
     ObjRef { val: usize },
+}
+
+impl JvmValue {
+    pub fn null_obj() -> JvmValue {
+        JvmValue::ObjRef { val: 0 }
+    }
 }
 
 impl fmt::Display for JvmValue {
