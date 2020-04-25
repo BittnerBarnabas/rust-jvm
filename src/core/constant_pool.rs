@@ -1,28 +1,26 @@
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
-use cesu8::from_java_cesu8;
-use std::borrow::Borrow;
-use std::fs::File;
-use std::io;
 use std::io::{Cursor, Error, ErrorKind};
 
-const CONSTANT_Utf8: u8 = 0x01;
-const CONSTANT_Integer: u8 = 0x03;
-const CONSTANT_Float: u8 = 0x04;
-const CONSTANT_Long: u8 = 0x05;
-const CONSTANT_Double: u8 = 0x06;
-const CONSTANT_Class: u8 = 0x07;
-const CONSTANT_String: u8 = 0x08;
-const CONSTANT_Fieldref: u8 = 0x09;
-const CONSTANT_Methodref: u8 = 0x0A;
-const CONSTANT_InterfaceMethodref: u8 = 0x0B;
-const CONSTANT_NameAndType: u8 = 0x0C;
-const CONSTANT_MethodHandle: u8 = 0x0F;
-const CONSTANT_MethodType: u8 = 0x10;
-const CONSTANT_Dynamic: u8 = 0x11;
-const CONSTANT_InvokeDynamic: u8 = 0x12;
-const CONSTANT_Module: u8 = 0x13;
-const CONSTANT_Package: u8 = 0x14;
+use byteorder::{BigEndian, ReadBytesExt};
 
+const CONSTANT_UTF8: u8 = 0x01;
+const CONSTANT_INTEGER: u8 = 0x03;
+const CONSTANT_FLOAT: u8 = 0x04;
+const CONSTANT_LONG: u8 = 0x05;
+const CONSTANT_DOUBLE: u8 = 0x06;
+const CONSTANT_CLASS: u8 = 0x07;
+const CONSTANT_STRING: u8 = 0x08;
+const CONSTANT_FIELDREF: u8 = 0x09;
+const CONSTANT_METHODREF: u8 = 0x0A;
+const CONSTANT_INTERFACE_METHODREF: u8 = 0x0B;
+const CONSTANT_NAME_AND_TYPE: u8 = 0x0C;
+const CONSTANT_METHOD_HANDLE: u8 = 0x0F;
+const CONSTANT_METHOD_TYPE: u8 = 0x10;
+const CONSTANT_DYNAMIC: u8 = 0x11;
+const CONSTANT_INVOKE_DYNAMIC: u8 = 0x12;
+const CONSTANT_MODULE: u8 = 0x13;
+const CONSTANT_PACKAGE: u8 = 0x14;
+
+#[derive(Clone)]
 pub struct ConstantPool {
     pool: Vec<CpInfo>,
 }
@@ -89,7 +87,7 @@ pub enum CpInfo {
 impl CpInfo {
     pub fn create(cursor: &mut Cursor<Vec<u8>>) -> Result<CpInfo, Error> {
         match cursor.read_u8()? {
-            CONSTANT_Utf8 => {
+            CONSTANT_UTF8 => {
                 let length = cursor.read_u16::<BigEndian>()?;
                 let mut bytes: Vec<u8> = Vec::new();
                 for _n in 0..length {
@@ -103,36 +101,36 @@ impl CpInfo {
                     string: decoded_string.into_owned(),
                 })
             }
-            CONSTANT_Integer => Ok(CpInfo::Integer {
+            CONSTANT_INTEGER => Ok(CpInfo::Integer {
                 bytes: cursor.read_u32::<BigEndian>()?,
             }),
-            CONSTANT_Float => Ok(CpInfo::Float {
+            CONSTANT_FLOAT => Ok(CpInfo::Float {
                 bytes: cursor.read_u32::<BigEndian>()?,
             }),
-            CONSTANT_Double => Ok(CpInfo::Double {
+            CONSTANT_DOUBLE => Ok(CpInfo::Double {
                 high_bytes: cursor.read_u32::<BigEndian>()?,
                 low_bytes: cursor.read_u32::<BigEndian>()?,
             }),
-            CONSTANT_Long => Ok(CpInfo::Long {
+            CONSTANT_LONG => Ok(CpInfo::Long {
                 high_bytes: cursor.read_u32::<BigEndian>()?,
                 low_bytes: cursor.read_u32::<BigEndian>()?,
             }),
-            CONSTANT_Class => Ok(CpInfo::Class {
+            CONSTANT_CLASS => Ok(CpInfo::Class {
                 name_index: cursor.read_u16::<BigEndian>()?,
             }),
-            CONSTANT_Fieldref => Ok(CpInfo::FieldRef {
+            CONSTANT_FIELDREF => Ok(CpInfo::FieldRef {
                 class_index: cursor.read_u16::<BigEndian>()?,
                 name_and_type_index: cursor.read_u16::<BigEndian>()?,
             }),
-            CONSTANT_Methodref => Ok(CpInfo::MethodRef {
+            CONSTANT_METHODREF => Ok(CpInfo::MethodRef {
                 class_index: cursor.read_u16::<BigEndian>()?,
                 name_and_type_index: cursor.read_u16::<BigEndian>()?,
             }),
-            CONSTANT_NameAndType => Ok(CpInfo::NameAndType {
+            CONSTANT_NAME_AND_TYPE => Ok(CpInfo::NameAndType {
                 name_index: cursor.read_u16::<BigEndian>()?,
                 descriptor_index: cursor.read_u16::<BigEndian>()?,
             }),
-            CONSTANT_MethodHandle => Ok(CpInfo::MethodHandle {
+            CONSTANT_METHOD_HANDLE => Ok(CpInfo::MethodHandle {
                 reference_kind: cursor.read_u8()?,
                 reference_index: cursor.read_u16::<BigEndian>()?,
             }),

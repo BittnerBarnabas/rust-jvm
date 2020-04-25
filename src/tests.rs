@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests {
+    use crate::core::class_parser::ClassParser;
+    use crate::core::interpreter;
     use crate::core::jvm::JvmValue;
     use crate::core::opcode;
-    use crate::core::{class_parser, interpreter};
 
     #[test]
     pub fn storing_and_adding_local_integers() {
@@ -31,8 +32,10 @@ mod tests {
         let class_file_in_bytes =
             std::fs::read("/home/barnab/tmp/Main2.class").expect("File Not Found");
 
-        let result =
-            class_parser::parse_class(class_file_in_bytes).expect("Class file couldn't be parsed!");
+        let parser = ClassParser::from(class_file_in_bytes);
+        let result = parser
+            .parse_class()
+            .expect("Class file couldn't be parsed!");
 
         println!("ABC");
     }
