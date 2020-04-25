@@ -98,8 +98,35 @@ impl AccessFlag {
     }
 }
 
+pub struct ExceptionHandler {
+    pub start_pc: u16,
+    pub end_pc: u16,
+    pub handler_pc: u16,
+    pub catch_type: u16,
+}
+
+pub struct LineNumber {
+    pub start_pc: u16,
+    pub line_number: u16,
+}
+
 pub enum AttributeInfo {
-    ConstantValue {},
+    ConstantValue {
+        constant_value_index: u16,
+    },
+    Code {
+        max_stack: u16,
+        max_locals: u16,
+        code: Vec<u8>,
+        exception_table: Vec<ExceptionHandler>,
+        attributes: Vec<AttributeInfo>,
+    },
+    LineNumberTable {
+        line_number_table: Vec<LineNumber>,
+    },
+    SourceFile {
+        sourcefile_index: u16,
+    },
     Custom {
         attribute_name_index: u16,
         attribute_length: u32,
@@ -114,6 +141,13 @@ pub struct FieldInfo {
     pub attributes: Vec<AttributeInfo>,
 }
 
+pub struct MethodInfo {
+    pub access_flags: u16,
+    pub name_index: u16,
+    pub descriptor_index: u16,
+    pub attributes: Vec<AttributeInfo>,
+}
+
 pub struct Klass {
     pub minor_version: u16,
     pub major_version: u16,
@@ -122,4 +156,7 @@ pub struct Klass {
     pub this_class: CpInfo,
     pub super_class: Option<CpInfo>,
     pub interfaces: Vec<CpInfo>,
+    pub fields: Vec<FieldInfo>,
+    pub methods: Vec<MethodInfo>,
+    pub attributes: Vec<AttributeInfo>,
 }
