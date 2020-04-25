@@ -35,7 +35,6 @@ impl ClassParser {
         let major_version = cursor.read_u16::<BigEndian>()?;
 
         let constant_pool_count = cursor.read_u16::<BigEndian>()?;
-
         let mut constant_pool = ConstantPool::create(&mut cursor, constant_pool_count as usize)?;
 
         ClassParserImpl {
@@ -63,7 +62,7 @@ impl ClassParser {
 }
 
 impl ClassParserImpl {
-    pub fn parse(&mut self) -> Result<Klass, Error> {
+    fn parse(&mut self) -> Result<Klass, Error> {
         let access_flags = AccessFlag::unmask_u16(self.cursor.read_u16::<BigEndian>()?);
         let this_class = self
             .parse_class_pointer()?
@@ -127,12 +126,14 @@ impl ClassParserImpl {
     fn parse_field(&mut self) -> Result<FieldInfo, Error> {
         let access_flags = self.cursor.read_u16::<BigEndian>()?;
         let name_index = self.cursor.read_u16::<BigEndian>()?;
+        let name = self.get_utf8_from_pool(name_index)?;
         let descriptor_index = self.cursor.read_u16::<BigEndian>()?;
         let attributes = self.parse_attributes()?;
+
         return Ok(FieldInfo {
             access_flags,
-            name_index,
-            descriptor_index,
+            name,
+            descriptor: self.get_utf8_from_pool(descriptor_index)?,
             attributes,
         });
     }
@@ -153,8 +154,8 @@ impl ClassParserImpl {
         let attributes = self.parse_attributes()?;
         return Ok(MethodInfo {
             access_flags,
-            name_index,
-            descriptor_index,
+            name: self.get_utf8_from_pool(name_index)?,
+            descriptor: self.get_utf8_from_pool(descriptor_index)?,
             attributes,
         });
     }
@@ -171,19 +172,8 @@ impl ClassParserImpl {
 
     fn parse_attribute(&mut self) -> Result<AttributeInfo, Error> {
         let name_index = self.cursor.read_u16::<BigEndian>()?;
-        let attribute_name;
-        if let CpInfo::Utf8 { string: str } = self.constant_pool.get(name_index as usize) {
-            attribute_name = str;
-        } else {
-            return Err(Error::new(
-                ErrorKind::Other,
-                format!(
-                    "Attribute name_index {} should point to UTF-8 in constant pool!",
-                    name_index
-                ),
-            ));
-        }
-        let attribute_length = self.cursor.read_u32::<BigEndian>()?;
+        let attribute_name = self.get_utf8_from_pool(name_index)?;
+        let _attribute_length = self.cursor.read_u32::<BigEndian>()?;
 
         return match attribute_name.as_str() {
             "ConstantValue" => Ok(AttributeInfo::ConstantValue {
@@ -241,6 +231,17 @@ impl ClassParserImpl {
                 ErrorKind::Other,
                 format!("Unknown attribute type: {}", attribute_name),
             )),
+        };
+    }
+
+    fn get_utf8_from_pool(&self, index: u16) -> Result<String, Error> {
+        return if let CpInfo::Utf8 { string: str } = self.constant_pool.get(index as usize) {
+            Ok(str.clone())
+        } else {
+            Err(Error::new(
+                ErrorKind::Other,
+                format!("Index: {} must point to UTF8 constant!", index),
+            ))
         };
     }
 }
