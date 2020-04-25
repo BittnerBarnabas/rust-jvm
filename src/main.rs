@@ -1,4 +1,6 @@
 mod core {
+    pub mod class_parser;
+    pub mod constant_pool;
     pub mod interpreter;
     pub mod jvm;
     pub mod opcode;
