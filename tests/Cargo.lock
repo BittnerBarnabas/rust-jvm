@@ -37,11 +37,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-jvm"
+name = "tests"
 version = "0.1.0"
 dependencies = [
  "runtime",
- "utils",
 ]
 
 [[package]]

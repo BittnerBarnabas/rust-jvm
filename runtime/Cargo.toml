@@ -1,11 +1,12 @@
 [package]
-name = "rust-jvm"
+name = "runtime"
 version = "0.1.0"
-authors = ["barnab"]
+authors = ["barnab <bittnerbarni@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-runtime = { path = "runtime"}
-utils = { path = "utils"}
+utils = { path = "../utils"}
+byteorder = "1"
+cesu8 = "1.1.0"
