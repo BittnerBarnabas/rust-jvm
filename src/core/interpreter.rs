@@ -1,5 +1,7 @@
-use crate::core::jvm::{JvmException, JvmValue, StackFrame};
+use crate::core::jvm_exception::JvmException;
+use crate::core::jvm_value::JvmValue;
 use crate::core::opcode;
+use crate::core::stack_frame::StackFrame;
 
 const DEFAULT_LOCAL_VARIABLE_STORE_SIZE: usize = 128;
 

@@ -4,10 +4,11 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 use utils::ResultIterator;
 
-use crate::core::constant_pool::{ConstantPool, CpInfo};
-use crate::core::jvm::AttributeInfo::{LineNumberTable, Signature, SourceFile};
-use crate::core::jvm::{AccessFlag, ExceptionHandler, FieldInfo, LineNumber, MethodInfo};
-use crate::core::jvm::{AttributeInfo, Klass};
+use crate::core::klass::attribute::{AttributeInfo, ExceptionHandler, LineNumber};
+use crate::core::klass::constant_pool::{ConstantPool, CpInfo};
+use crate::core::klass::field::FieldInfo;
+use crate::core::klass::klass::Klass;
+use crate::core::klass::method::MethodInfo;
 
 const CLASS_MAGIC_NUMBER: u32 = 0xCAFEBABE;
 
@@ -63,7 +64,7 @@ impl ClassParser {
 
 impl ClassParserImpl {
     fn parse(&mut self) -> Result<Klass, Error> {
-        let access_flags = AccessFlag::unmask_u16(self.cursor.read_u16::<BigEndian>()?);
+        let access_flags = self.cursor.read_u16::<BigEndian>()?;
         let this_class = self
             .parse_class_pointer()?
             .expect("this_class is not found!");
@@ -222,12 +223,12 @@ impl ClassParserImpl {
                     })
                     .collect_to_result()?;
 
-                Ok(LineNumberTable { line_number_table })
+                Ok(AttributeInfo::LineNumberTable { line_number_table })
             }
-            "SourceFile" => Ok(SourceFile {
+            "SourceFile" => Ok(AttributeInfo::SourceFile {
                 sourcefile_index: self.cursor.read_u16::<BigEndian>()?,
             }),
-            "Signature" => Ok(Signature {
+            "Signature" => Ok(AttributeInfo::Signature {
                 signature_index: self.cursor.read_u16::<BigEndian>()?,
             }),
             _ => Err(Error::new(

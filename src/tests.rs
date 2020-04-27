@@ -2,8 +2,9 @@
 mod tests {
     use crate::core::class_parser::ClassParser;
     use crate::core::interpreter;
-    use crate::core::jvm::{AttributeInfo, JvmValue, StackFrame};
+    use crate::core::jvm_value::JvmValue;
     use crate::core::opcode;
+    use crate::core::stack_frame::StackFrame;
 
     #[test]
     pub fn storing_and_adding_local_integers() {
