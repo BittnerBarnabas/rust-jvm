@@ -1,4 +1,6 @@
 use crate::core::constant_pool::{ConstantPool, CpInfo};
+use crate::core::interpreter;
+use crate::core::interpreter::interpret;
 use crate::core::jvm::AccessFlag::{
     Abstract, Annotation, Enum, Final, Interface, Module, Public, Super, Synthetic,
 };
@@ -16,6 +18,7 @@ pub enum JvmValue {
     Char { val: char },
     ObjRef { val: usize },
     ReturnAddr { val: usize },
+    Void {},
 }
 
 impl JvmValue {
@@ -37,6 +40,7 @@ impl fmt::Display for JvmValue {
             JvmValue::Char { val: v } => write!(f, "{}", v),
             JvmValue::ObjRef { val: v } => write!(f, "{}", v),
             JvmValue::ReturnAddr { val: v } => write!(f, "{}", v),
+            JvmValue::Void {} => write!(f, "Void"),
         }
     }
 }
@@ -127,6 +131,9 @@ pub enum AttributeInfo {
     SourceFile {
         sourcefile_index: u16,
     },
+    Signature {
+        signature_index: u16,
+    },
     Custom {
         attribute_name_index: u16,
         attribute_length: u32,
@@ -148,6 +155,20 @@ pub struct MethodInfo {
     pub attributes: Vec<AttributeInfo>,
 }
 
+impl MethodInfo {
+    pub fn get_code(&self) -> Option<&Vec<u8>> {
+        let code = self.attributes.iter().find(|att| match att {
+            AttributeInfo::Code { .. } => true,
+            _ => false,
+        });
+
+        return match code {
+            Some(AttributeInfo::Code { code, .. }) => Some(code),
+            _ => None,
+        };
+    }
+}
+
 pub struct Klass {
     pub minor_version: u16,
     pub major_version: u16,
@@ -159,4 +180,30 @@ pub struct Klass {
     pub fields: Vec<FieldInfo>,
     pub methods: Vec<MethodInfo>,
     pub attributes: Vec<AttributeInfo>,
+}
+
+pub struct JvmException {}
+
+pub struct StackFrame<'a> {
+    previous: Option<&'a StackFrame<'a>>,
+}
+
+impl<'a> StackFrame<'a> {
+    pub fn new() -> StackFrame<'a> {
+        StackFrame { previous: None }
+    }
+
+    pub fn execute_method(&self, method: &MethodInfo) -> Result<JvmValue, JvmException> {
+        let next_frame = StackFrame {
+            previous: Some(self),
+        };
+
+        match method.get_code() {
+            Some(code) => {
+                let result = interpreter::interpret(&next_frame, code);
+                return result;
+            }
+            _ => Err(JvmException {}),
+        }
+    }
 }

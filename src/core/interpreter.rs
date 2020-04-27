@@ -1,4 +1,4 @@
-use crate::core::jvm::JvmValue;
+use crate::core::jvm::{JvmException, JvmValue, StackFrame};
 use crate::core::opcode;
 
 const DEFAULT_LOCAL_VARIABLE_STORE_SIZE: usize = 128;
@@ -60,7 +60,10 @@ impl LocalVariableStore {
     }
 }
 
-pub fn interpret(byte_codes: &Vec<u8>) -> Option<JvmValue> {
+pub fn interpret(
+    current_frame: &StackFrame,
+    byte_codes: &Vec<u8>,
+) -> Result<JvmValue, JvmException> {
     let mut current = 0;
     let mut eval_stack = EvaluationStack::new();
     let mut local_variables: LocalVariableStore =
@@ -99,10 +102,10 @@ pub fn interpret(byte_codes: &Vec<u8>) -> Option<JvmValue> {
                 &opcode::ILOAD_2 => eval_stack.push(local_variables.load(2)),
                 &opcode::ILOAD_3 => eval_stack.push(local_variables.load(3)),
                 &opcode::IRETURN => match eval_stack.pop() {
-                    java_int @ JvmValue::Int { val: _ } => return Some(java_int),
+                    java_int @ JvmValue::Int { val: _ } => return Ok(java_int),
                     _ => panic!("Non-int value was found on top of stack when executing IRETURN"),
                 },
-                &opcode::RETURN => return None,
+                &opcode::RETURN => return Ok(JvmValue::Void {}),
                 _ => panic!(format!("Unsupported byte code: {}", byte_code)),
             },
             None => {

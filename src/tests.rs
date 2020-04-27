@@ -2,7 +2,7 @@
 mod tests {
     use crate::core::class_parser::ClassParser;
     use crate::core::interpreter;
-    use crate::core::jvm::JvmValue;
+    use crate::core::jvm::{AttributeInfo, JvmValue, StackFrame};
     use crate::core::opcode;
 
     #[test]
@@ -23,14 +23,15 @@ mod tests {
             opcode::IRETURN,
         ];
 
-        let interpreter_result = interpreter::interpret(&opcodes);
+        let frame = StackFrame::new();
+        let interpreter_result = interpreter::interpret(&frame, &opcodes).ok();
         assert_eq!(interpreter_result, Some(JvmValue::Int { val: 20 }));
     }
 
     #[test]
     pub fn test() {
         let class_file_in_bytes =
-            std::fs::read("/home/barnab/tmp/Main2.class").expect("File Not Found");
+            std::fs::read("./resources/tests/Main2.class").expect("File Not Found");
 
         let parser = ClassParser::from(class_file_in_bytes);
         let result = parser

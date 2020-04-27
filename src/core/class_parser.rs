@@ -5,7 +5,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use utils::ResultIterator;
 
 use crate::core::constant_pool::{ConstantPool, CpInfo};
-use crate::core::jvm::AttributeInfo::{LineNumberTable, SourceFile};
+use crate::core::jvm::AttributeInfo::{LineNumberTable, Signature, SourceFile};
 use crate::core::jvm::{AccessFlag, ExceptionHandler, FieldInfo, LineNumber, MethodInfo};
 use crate::core::jvm::{AttributeInfo, Klass};
 
@@ -226,6 +226,9 @@ impl ClassParserImpl {
             }
             "SourceFile" => Ok(SourceFile {
                 sourcefile_index: self.cursor.read_u16::<BigEndian>()?,
+            }),
+            "Signature" => Ok(Signature {
+                signature_index: self.cursor.read_u16::<BigEndian>()?,
             }),
             _ => Err(Error::new(
                 ErrorKind::Other,
