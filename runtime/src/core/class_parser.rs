@@ -4,7 +4,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 use utils::ResultIterator;
 
-use crate::core::klass::attribute::{AttributeInfo, ExceptionHandler, LineNumber};
+use crate::core::klass::attribute::{AttributeInfo, ExceptionHandler, LineNumber, LocalVariable};
 use crate::core::klass::constant_pool::{ConstantPool, CpInfo};
 use crate::core::klass::field::FieldInfo;
 use crate::core::klass::klass::Klass;
@@ -174,7 +174,7 @@ impl ClassParserImpl {
     fn parse_attribute(&mut self) -> Result<AttributeInfo, Error> {
         let name_index = self.cursor.read_u16::<BigEndian>()?;
         let attribute_name = self.get_utf8_from_pool(name_index)?;
-        let _attribute_length = self.cursor.read_u32::<BigEndian>()?;
+        let attribute_length = self.cursor.read_u32::<BigEndian>()?;
 
         return match attribute_name.as_str() {
             "ConstantValue" => Ok(AttributeInfo::ConstantValue {
@@ -225,16 +225,46 @@ impl ClassParserImpl {
 
                 Ok(AttributeInfo::LineNumberTable { line_number_table })
             }
+            "LocalVariableTable" => {
+                let table_length = self.cursor.read_u16::<BigEndian>()?;
+                let local_variable_table = (0..table_length)
+                    .map(|_| -> Result<LocalVariable, Error> {
+                        Ok(LocalVariable {
+                            start_pc: self.cursor.read_u16::<BigEndian>()?,
+                            length: self.cursor.read_u16::<BigEndian>()?,
+                            name_index: self.cursor.read_u16::<BigEndian>()?,
+                            descriptor_index: self.cursor.read_u16::<BigEndian>()?,
+                            index: self.cursor.read_u16::<BigEndian>()?,
+                        })
+                    })
+                    .collect_to_result()?;
+
+                Ok(AttributeInfo::LocalVariableTable {
+                    local_variable_table,
+                })
+            }
             "SourceFile" => Ok(AttributeInfo::SourceFile {
                 sourcefile_index: self.cursor.read_u16::<BigEndian>()?,
             }),
             "Signature" => Ok(AttributeInfo::Signature {
                 signature_index: self.cursor.read_u16::<BigEndian>()?,
             }),
-            _ => Err(Error::new(
-                ErrorKind::Other,
-                format!("Unknown attribute type: {}", attribute_name),
-            )),
+            unimplemented_attribute => {
+                eprintln!(
+                    "Unimplemented attribute: {} wrapping in custom attribute",
+                    unimplemented_attribute
+                );
+
+                let info = (0..attribute_length)
+                    .map(|_| self.cursor.read_u8())
+                    .collect_to_result()?;
+
+                Ok(AttributeInfo::Custom {
+                    attribute_name_index: name_index,
+                    attribute_length,
+                    info,
+                })
+            }
         };
     }
 

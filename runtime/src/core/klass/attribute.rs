@@ -5,6 +5,14 @@ pub struct ExceptionHandler {
     pub catch_type: u16,
 }
 
+pub struct LocalVariable {
+    pub start_pc: u16,
+    pub length: u16,
+    pub name_index: u16,
+    pub descriptor_index: u16,
+    pub index: u16,
+}
+
 pub struct LineNumber {
     pub start_pc: u16,
     pub line_number: u16,
@@ -23,6 +31,9 @@ pub enum AttributeInfo {
     },
     LineNumberTable {
         line_number_table: Vec<LineNumber>,
+    },
+    LocalVariableTable {
+        local_variable_table: Vec<LocalVariable>,
     },
     SourceFile {
         sourcefile_index: u16,

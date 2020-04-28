@@ -82,6 +82,9 @@ pub enum CpInfo {
         reference_kind: u8,
         reference_index: u16,
     },
+    String {
+        string_index: u16,
+    },
 }
 
 impl CpInfo {
@@ -133,6 +136,9 @@ impl CpInfo {
             CONSTANT_METHOD_HANDLE => Ok(CpInfo::MethodHandle {
                 reference_kind: cursor.read_u8()?,
                 reference_index: cursor.read_u16::<BigEndian>()?,
+            }),
+            CONSTANT_STRING => Ok(CpInfo::String {
+                string_index: cursor.read_u16::<BigEndian>()?,
             }),
             other => Err(Error::new(
                 ErrorKind::Other,
