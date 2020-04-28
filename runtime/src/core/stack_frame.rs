@@ -22,7 +22,7 @@ impl<'a> StackFrame<'a> {
                 let result = interpreter::interpret(&next_frame, code);
                 return result;
             }
-            _ => Err(JvmException {}),
+            _ => Err(JvmException::new()),
         }
     }
 }

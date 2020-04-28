@@ -38,6 +38,10 @@ mod tests {
             .parse_class()
             .expect("Class file couldn't be parsed!");
 
+        let cl_init_code = result.methods[4].get_code().expect("Code is not found!");
+        let frame = StackFrame::new();
+        let result1 = interpreter::interpret(&frame, cl_init_code);
+
         println!("ABC");
     }
 }
