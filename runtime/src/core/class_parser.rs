@@ -88,14 +88,16 @@ impl ClassParserImpl {
         })
     }
 
-    fn parse_class_pointer(&mut self) -> Result<Option<CpInfo>, Error> {
+    fn parse_class_pointer(&mut self) -> Result<Option<String>, Error> {
         let ind = self.cursor.read_u16::<BigEndian>()?;
         if ind == 0 {
             return Ok(None);
         }
 
         return match self.constant_pool.get(ind as usize) {
-            class_info @ CpInfo::Class { name_index: _ } => Ok(Some(class_info.clone())),
+            CpInfo::Class { name_index: index } => {
+                self.get_utf8_from_pool(index.clone()).map(|str| Some(str))
+            }
             other => Err(Error::new(
                 ErrorKind::Other,
                 format!("constant_pool[{}] should point to Class info!", ind),
@@ -103,7 +105,7 @@ impl ClassParserImpl {
         };
     }
 
-    fn parse_interfaces(&mut self) -> Result<Vec<CpInfo>, Error> {
+    fn parse_interfaces(&mut self) -> Result<Vec<String>, Error> {
         let interfaces_count = self.cursor.read_u16::<BigEndian>()?;
         let interfaces = (0..interfaces_count)
             .map(|_| {
@@ -153,12 +155,12 @@ impl ClassParserImpl {
         let name_index = self.cursor.read_u16::<BigEndian>()?;
         let descriptor_index = self.cursor.read_u16::<BigEndian>()?;
         let attributes = self.parse_attributes()?;
-        return Ok(MethodInfo {
+        return MethodInfo::from(
             access_flags,
-            name: self.get_utf8_from_pool(name_index)?,
-            descriptor: self.get_utf8_from_pool(descriptor_index)?,
+            self.get_utf8_from_pool(name_index)?,
+            self.get_utf8_from_pool(descriptor_index)?,
             attributes,
-        });
+        );
     }
 
     fn parse_attributes(&mut self) -> Result<Vec<AttributeInfo>, Error> {
