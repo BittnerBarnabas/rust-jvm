@@ -9,6 +9,7 @@ use crate::core::klass::constant_pool::{ConstantPool, CpInfo};
 use crate::core::klass::field::FieldInfo;
 use crate::core::klass::klass::Klass;
 use crate::core::klass::method::MethodInfo;
+use std::convert::TryInto;
 
 const CLASS_MAGIC_NUMBER: u32 = 0xCAFEBABE;
 
@@ -271,13 +272,12 @@ impl ClassParserImpl {
     }
 
     fn get_utf8_from_pool(&self, index: u16) -> Result<String, Error> {
-        return if let CpInfo::Utf8 { string: str } = self.constant_pool.get(index as usize) {
-            Ok(str.clone())
-        } else {
-            Err(Error::new(
+        match self.constant_pool.get_utf8(index as usize) {
+            Some(utf8) => Ok(utf8),
+            _ => Err(Error::new(
                 ErrorKind::Other,
                 format!("Index: {} must point to UTF8 constant!", index),
-            ))
-        };
+            )),
+        }
     }
 }

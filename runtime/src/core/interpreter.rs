@@ -1,7 +1,9 @@
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
+use crate::core::klass::constant_pool;
 use crate::core::opcode;
 use crate::core::stack_frame::StackFrame;
+use std::io::Cursor;
 
 const DEFAULT_LOCAL_VARIABLE_STORE_SIZE: usize = 128;
 
@@ -262,7 +264,7 @@ pub fn interpret(
                         _ => Err(JvmException::from_str(
                             "Non-int value was found on top of stack when executing IRETURN",
                         )),
-                    }
+                    };
                 }
                 &opcode::LRETURN => panic!("UnImplemented byte-code: LRETURN"),
                 &opcode::FRETURN => panic!("UnImplemented byte-code: FRETURN"),
@@ -275,7 +277,23 @@ pub fn interpret(
                 &opcode::PUTFIELD => panic!("UnImplemented byte-code: PUTFIELD"),
                 &opcode::INVOKEVIRTUAL => panic!("UnImplemented byte-code: INVOKEVIRTUAL"),
                 &opcode::INVOKESPECIAL => panic!("UnImplemented byte-code: INVOKESPECIAL"),
-                &opcode::INVOKESTATIC => panic!("UnImplemented byte-code: INVOKESTATIC"),
+                &opcode::INVOKESTATIC => {
+                    use byteorder::{BigEndian, ReadBytesExt};
+                    let mut cursor = Cursor::new(byte_codes);
+                    cursor.set_position(ip as u64);
+                    let index = cursor
+                        .read_u16::<BigEndian>()
+                        .map_err(|_| JvmException::new())?;
+
+                    constant_pool::CpInfo::MethodRef
+                    // match current_frame
+                    //     .current_class()
+                    //     .constant_pool
+                    //     .get(index as usize) {
+                    //     C
+                    //    _ => {}
+                    // }
+                }
                 &opcode::INVOKEINTERFACE => panic!("UnImplemented byte-code: INVOKEINTERFACE"),
                 &opcode::INVOKEDYNAMIC => panic!("UnImplemented byte-code: INVOKEDYNAMIC"),
                 &opcode::NEW => panic!("UnImplemented byte-code: NEW"),

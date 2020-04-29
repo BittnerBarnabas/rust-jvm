@@ -1,4 +1,7 @@
 pub mod core {
+    pub mod native {
+        pub mod native_methods;
+    }
     pub mod klass {
         pub mod access_flags;
         pub mod attribute;

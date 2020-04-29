@@ -1,5 +1,6 @@
 use std::io::{Cursor, Error, ErrorKind};
 
+use crate::core::klass::method::MethodReference;
 use byteorder::{BigEndian, ReadBytesExt};
 
 const CONSTANT_UTF8: u8 = 0x01;
@@ -41,6 +42,26 @@ impl ConstantPool {
 
     pub fn get(&self, ind: usize) -> &CpInfo {
         &self.pool[ind - 1]
+    }
+
+    pub fn get_utf8(&self, ind: usize) -> Option<String> {
+        return if let CpInfo::Utf8 { string: str } = self.get(index) {
+            Some(str.clone())
+        } else {
+            None
+        };
+    }
+
+    pub fn get_method_by_constant_pool_index(&self, index: usize) -> Option<MethodReference> {
+        match self.get(index) {
+            CpInfo::MethodRef {
+                name_and_type_index,
+                class_index,
+            } => {
+                let name_type = self.get_utf8(name_and_type_index as usize);
+            }
+            _ => {}
+        }
     }
 }
 
