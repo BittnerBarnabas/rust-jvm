@@ -2,7 +2,10 @@
 mod tests {
     use runtime::core::class_loader::ClassLoader;
     use runtime::core::class_parser::ClassParser;
+    use runtime::core::jvm_exception::JvmException;
     use runtime::core::jvm_value::JvmValue;
+    use runtime::core::klass::constant_pool::Qualifier;
+    use runtime::core::klass::klass::Klass;
     use runtime::core::stack_frame::StackFrame;
     use runtime::core::{interpreter, opcode};
 
@@ -31,24 +34,28 @@ mod tests {
 
     #[test]
     pub fn test() {
-        let mut class_loader = ClassLoader::new();
-        let bootStrapped = class_loader.bootstrap();
+        let class_loader = ClassLoader::new();
+        class_loader.bootstrap();
 
-        let class_file_in_bytes =
-            std::fs::read("../resources/java/lang/Object.class").expect("File Not Found");
+        class_loader.load_class(String::from("mypack/SimpleMain"));
 
-        let parser = ClassParser::from(class_file_in_bytes);
-        let result = parser
-            .parse_class()
-            .expect("Class file couldn't be parsed!");
-
-        let cl_init_code: &Vec<u8> = result.methods[4]
-            .get_code()
-            .as_ref()
-            .expect("Code is not found!");
-        // let frame = StackFrame::new();
-        // let result1 = interpreter::interpret(&frame, &cl_init_code);
+        let main_result = class_loader
+            .lookup_class(String::from("mypack/SimpleMain"))
+            .and_then(|klass| invoke_main(&class_loader, &klass));
 
         println!("ABC");
+    }
+
+    fn invoke_main(class_loader: &ClassLoader, klass: &Klass) -> Result<JvmValue, JvmException> {
+        let method_by_name = klass.get_method_by_qualified_name(Qualifier::MethodRef {
+            class_name: String::from("mypack/SimpleMain"),
+            descriptor: String::from("([Ljava/lang/String;)V"),
+            name: String::from("main"),
+        });
+
+        method_by_name.map_or(Err(JvmException::new()), |method| {
+            let frame = StackFrame::new(&class_loader, &klass);
+            frame.execute_method(&method, &klass)
+        })
     }
 }

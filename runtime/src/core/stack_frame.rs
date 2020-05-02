@@ -39,6 +39,11 @@ impl<'a> StackFrame<'a> {
             current_class: klass,
         };
 
+        if method.is_native() {
+            let native_fn = method.get_native_method().ok_or(JvmException::new())?;
+            return native_fn();
+        }
+
         match method.get_code() {
             Some(code) => {
                 let result = interpreter::interpret(&next_frame, code);

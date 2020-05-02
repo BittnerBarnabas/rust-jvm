@@ -1,7 +1,8 @@
 use std::io::{Cursor, Error, ErrorKind};
 
-use crate::core::klass::method::MethodReference;
 use byteorder::{BigEndian, ReadBytesExt};
+
+use crate::core::klass::method::MethodReference;
 
 const CONSTANT_UTF8: u8 = 0x01;
 const CONSTANT_INTEGER: u8 = 0x03;
@@ -26,6 +27,25 @@ pub struct ConstantPool {
     pool: Vec<CpInfo>,
 }
 
+pub enum Qualifier {
+    String {
+        val: String,
+    },
+    Class {
+        name: String,
+    },
+    MethodRef {
+        class_name: String,
+        name: String,
+        descriptor: String,
+    },
+    TypeName {
+        name: String,
+        descriptor: String,
+    },
+    Null,
+}
+
 impl ConstantPool {
     pub fn from(constants: Vec<CpInfo>) -> ConstantPool {
         ConstantPool { pool: constants }
@@ -45,27 +65,70 @@ impl ConstantPool {
     }
 
     pub fn get_utf8(&self, ind: usize) -> Option<String> {
-        return if let CpInfo::Utf8 { string: str } = self.get(index) {
+        return if let CpInfo::Utf8 { string: str } = self.get(ind) {
             Some(str.clone())
         } else {
             None
         };
     }
 
-    pub fn get_method_by_constant_pool_index(&self, index: usize) -> Option<MethodReference> {
-        match self.get(index) {
+    pub fn get_qualified_name(&self, index: u16) -> Qualifier {
+        match self.get(index as usize) {
+            CpInfo::Utf8 { string } => Qualifier::String {
+                val: string.clone(),
+            },
+            CpInfo::Class { name_index } => match self.get_qualified_name(*name_index) {
+                Qualifier::String { val } => Qualifier::Class { name: val },
+                _ => Qualifier::Null,
+            },
+            // CpInfo::FieldRef {
+            //     name_and_type_index,
+            //     class_index,
+            // } => {
+            //     let mut lhs = self.get_qualified_name(*class_index);
+            //     let mut rhs = self.get_qualified_name(*name_and_type_index);
+            //     lhs.append(&mut rhs);
+            //     return lhs;
+            // }
             CpInfo::MethodRef {
-                name_and_type_index,
                 class_index,
+                name_and_type_index,
             } => {
-                let name_type = self.get_utf8(name_and_type_index as usize);
+                if let Qualifier::Class { name: class_name } = self.get_qualified_name(*class_index)
+                {
+                    if let Qualifier::TypeName {
+                        name,
+                        descriptor: type_name,
+                    } = self.get_qualified_name(*name_and_type_index)
+                    {
+                        return Qualifier::MethodRef {
+                            class_name,
+                            name,
+                            descriptor: type_name,
+                        };
+                    }
+                }
+                Qualifier::Null
             }
-            _ => {}
+            CpInfo::NameAndType {
+                name_index,
+                descriptor_index,
+            } => {
+                if let Qualifier::String { val: name } = self.get_qualified_name(*name_index) {
+                    if let Qualifier::String { val: descriptor } =
+                        self.get_qualified_name(*descriptor_index)
+                    {
+                        return Qualifier::TypeName { name, descriptor };
+                    }
+                }
+                Qualifier::Null
+            }
+            _ => Qualifier::Null,
         }
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum CpInfo {
     Utf8 {
         string: String,

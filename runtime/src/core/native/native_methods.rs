@@ -7,5 +7,6 @@ pub fn hash_code() -> Result<JvmValue, JvmException> {
 }
 
 pub fn register_natives() -> Result<JvmValue, JvmException> {
+    println!("register_natives called!");
     Ok(JvmValue::Void {})
 }

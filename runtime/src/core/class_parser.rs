@@ -10,6 +10,7 @@ use crate::core::klass::field::FieldInfo;
 use crate::core::klass::klass::Klass;
 use crate::core::klass::method::MethodInfo;
 use std::convert::TryInto;
+use std::ops::RangeFrom;
 
 const CLASS_MAGIC_NUMBER: u32 = 0xCAFEBABE;
 
@@ -75,10 +76,10 @@ impl ClassParserImpl {
         let methods = self.parse_methods()?;
         let attributes = self.parse_attributes()?;
 
-        Ok(Klass {
-            minor_version: self.minor_version,
-            major_version: self.major_version,
-            constant_pool: self.constant_pool.clone(),
+        Ok(Klass::new(
+            self.minor_version,
+            self.major_version,
+            self.constant_pool.clone(),
             access_flags,
             this_class,
             super_class,
@@ -86,7 +87,7 @@ impl ClassParserImpl {
             fields,
             methods,
             attributes,
-        })
+        ))
     }
 
     fn parse_class_pointer(&mut self) -> Result<Option<String>, Error> {

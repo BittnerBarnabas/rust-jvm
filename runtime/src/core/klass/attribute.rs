@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct ExceptionHandler {
     pub start_pc: u16,
     pub end_pc: u16,
@@ -5,6 +6,7 @@ pub struct ExceptionHandler {
     pub catch_type: u16,
 }
 
+#[derive(Clone)]
 pub struct LocalVariable {
     pub start_pc: u16,
     pub length: u16,
@@ -13,11 +15,13 @@ pub struct LocalVariable {
     pub index: u16,
 }
 
+#[derive(Clone)]
 pub struct LineNumber {
     pub start_pc: u16,
     pub line_number: u16,
 }
 
+#[derive(Clone)]
 pub enum AttributeInfo {
     ConstantValue {
         constant_value_index: u16,

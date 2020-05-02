@@ -5,17 +5,20 @@ use crate::core::klass::attribute::AttributeInfo;
 use std::cell::Cell;
 use std::io::{Error, ErrorKind};
 
+type NativeMethod = fn() -> Result<JvmValue, JvmException>;
+
 pub struct MethodReference {
     pub class_name: String,
     pub method_name: String,
 }
 
+#[derive(Clone)]
 pub struct MethodInfo {
     access_flags: u16,
     name: String,
     descriptor: String,
     attributes: Vec<AttributeInfo>,
-    native_method: Cell<Option<fn() -> Result<JvmValue, JvmException>>>,
+    native_method: Cell<Option<NativeMethod>>,
     code: Option<Vec<u8>>,
 }
 
@@ -61,7 +64,11 @@ impl MethodInfo {
         self.access_flags & ACC_NATIVE != 0
     }
 
-    pub fn set_native_method(&self, method: fn() -> Result<JvmValue, JvmException>) {
+    pub fn set_native_method(&self, method: NativeMethod) {
         self.native_method.set(Some(method))
+    }
+
+    pub fn get_native_method(&self) -> Option<NativeMethod> {
+        self.native_method.get()
     }
 }

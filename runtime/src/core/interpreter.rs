@@ -1,6 +1,9 @@
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
 use crate::core::klass::constant_pool;
+use crate::core::klass::constant_pool::Qualifier;
+use crate::core::klass::klass::Klass;
+use crate::core::klass::method::MethodInfo;
 use crate::core::opcode;
 use crate::core::stack_frame::StackFrame;
 use std::io::Cursor;
@@ -280,19 +283,20 @@ pub fn interpret(
                 &opcode::INVOKESTATIC => {
                     use byteorder::{BigEndian, ReadBytesExt};
                     let mut cursor = Cursor::new(byte_codes);
-                    cursor.set_position(ip as u64);
+                    cursor.set_position(ip as u64 + 1);
                     let index = cursor
                         .read_u16::<BigEndian>()
                         .map_err(|_| JvmException::new())?;
 
-                    constant_pool::CpInfo::MethodRef
-                    // match current_frame
-                    //     .current_class()
-                    //     .constant_pool
-                    //     .get(index as usize) {
-                    //     C
-                    //    _ => {}
-                    // }
+                    let qualified_method_name = current_frame
+                        .current_class()
+                        .constant_pool
+                        .get_qualified_name(index);
+
+                    let method_to_call = resolve_method(current_frame, qualified_method_name)?;
+
+                    return current_frame
+                        .execute_method(&method_to_call, current_frame.current_class());
                 }
                 &opcode::INVOKEINTERFACE => panic!("UnImplemented byte-code: INVOKEINTERFACE"),
                 &opcode::INVOKEDYNAMIC => panic!("UnImplemented byte-code: INVOKEDYNAMIC"),
@@ -321,5 +325,28 @@ pub fn interpret(
             }
         }
         ip += 1;
+    }
+}
+
+fn resolve_method(
+    current_frame: &StackFrame,
+    qualified_name: Qualifier,
+) -> Result<MethodInfo, JvmException> {
+    match &qualified_name {
+        Qualifier::MethodRef {
+            class_name,
+            name,
+            descriptor,
+        } => {
+            if *current_frame.current_class().get_qualified_name() == *class_name {
+                current_frame
+                    .current_class()
+                    .get_method_by_qualified_name(qualified_name)
+                    .ok_or(JvmException::new())
+            } else {
+                current_frame.class_loader().lookup_method(qualified_name)
+            }
+        }
+        _ => Err(JvmException::new()),
     }
 }
