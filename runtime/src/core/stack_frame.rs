@@ -4,6 +4,7 @@ use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
 use crate::core::klass::klass::Klass;
 use crate::core::klass::method::MethodInfo;
+use std::rc::Rc;
 
 pub struct StackFrame<'a> {
     previous: Option<&'a StackFrame<'a>>,
@@ -30,7 +31,7 @@ impl<'a> StackFrame<'a> {
 
     pub fn execute_method(
         &self,
-        method: &MethodInfo,
+        method: Rc<MethodInfo>,
         klass: &Klass,
     ) -> Result<JvmValue, JvmException> {
         let next_frame = StackFrame {

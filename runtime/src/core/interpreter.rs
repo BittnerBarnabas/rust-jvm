@@ -7,6 +7,7 @@ use crate::core::klass::method::MethodInfo;
 use crate::core::opcode;
 use crate::core::stack_frame::StackFrame;
 use std::io::Cursor;
+use std::rc::Rc;
 
 const DEFAULT_LOCAL_VARIABLE_STORE_SIZE: usize = 128;
 
@@ -296,7 +297,7 @@ pub fn interpret(
                     let method_to_call = resolve_method(current_frame, qualified_method_name)?;
 
                     return current_frame
-                        .execute_method(&method_to_call, current_frame.current_class());
+                        .execute_method(method_to_call, current_frame.current_class());
                 }
                 &opcode::INVOKEINTERFACE => panic!("UnImplemented byte-code: INVOKEINTERFACE"),
                 &opcode::INVOKEDYNAMIC => panic!("UnImplemented byte-code: INVOKEDYNAMIC"),
@@ -331,7 +332,7 @@ pub fn interpret(
 fn resolve_method(
     current_frame: &StackFrame,
     qualified_name: Qualifier,
-) -> Result<MethodInfo, JvmException> {
+) -> Result<Rc<MethodInfo>, JvmException> {
     match &qualified_name {
         Qualifier::MethodRef {
             class_name,

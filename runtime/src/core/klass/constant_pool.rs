@@ -2,8 +2,6 @@ use std::io::{Cursor, Error, ErrorKind};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-use crate::core::klass::method::MethodReference;
-
 const CONSTANT_UTF8: u8 = 0x01;
 const CONSTANT_INTEGER: u8 = 0x03;
 const CONSTANT_FLOAT: u8 = 0x04;

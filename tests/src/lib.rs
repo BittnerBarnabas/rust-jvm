@@ -37,10 +37,8 @@ mod tests {
         let class_loader = ClassLoader::new();
         class_loader.bootstrap();
 
-        class_loader.load_class(String::from("mypack/SimpleMain"));
-
         let main_result = class_loader
-            .lookup_class(String::from("mypack/SimpleMain"))
+            .find_or_load_class(String::from("mypack/SimpleMain"))
             .and_then(|klass| invoke_main(&class_loader, &klass));
 
         println!("ABC");
@@ -55,7 +53,7 @@ mod tests {
 
         method_by_name.map_or(Err(JvmException::new()), |method| {
             let frame = StackFrame::new(&class_loader, &klass);
-            frame.execute_method(&method, &klass)
+            frame.execute_method(method, &klass)
         })
     }
 }

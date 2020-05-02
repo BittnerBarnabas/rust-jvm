@@ -1,12 +1,9 @@
-use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
-use crate::core::class_loader::ClassLoader;
-use crate::core::jvm_exception::JvmException;
 use crate::core::klass::attribute::AttributeInfo;
-use crate::core::klass::constant_pool::{ConstantPool, CpInfo, Qualifier};
+use crate::core::klass::constant_pool::{ConstantPool, Qualifier};
 use crate::core::klass::field::FieldInfo;
-use crate::core::klass::method::{MethodInfo, MethodReference};
+use crate::core::klass::method::MethodInfo;
 
 #[derive(Clone)]
 pub struct Klass {
@@ -18,7 +15,7 @@ pub struct Klass {
     pub super_class: Option<String>,
     pub interfaces: Vec<String>,
     pub fields: Vec<FieldInfo>,
-    pub methods: Vec<MethodInfo>,
+    pub methods: Vec<Rc<MethodInfo>>,
     pub attributes: Vec<AttributeInfo>,
 }
 
@@ -35,6 +32,8 @@ impl Klass {
         methods: Vec<MethodInfo>,
         attributes: Vec<AttributeInfo>,
     ) -> Klass {
+        let methods: Vec<Rc<MethodInfo>> = methods.iter().map(|m| Rc::new(m.clone())).collect();
+
         Klass {
             minor_version,
             major_version,
@@ -53,22 +52,24 @@ impl Klass {
         self.this_class.clone()
     }
 
-    pub fn get_method_by_qualified_name(&self, qualified_name: Qualifier) -> Option<MethodInfo> {
+    pub fn get_method_by_qualified_name(
+        &self,
+        qualified_name: Qualifier,
+    ) -> Option<Rc<MethodInfo>> {
         return match qualified_name {
             Qualifier::MethodRef {
                 class_name,
                 name,
                 descriptor,
-            } => self
-                .get_method_by_name_desc(format!("{}{}", name, descriptor))
-                .cloned(),
+            } => self.get_method_by_name_desc(format!("{}{}", name, descriptor)),
             _ => None,
         };
     }
 
-    pub fn get_method_by_name_desc(&self, name_desc: String) -> Option<&MethodInfo> {
+    pub fn get_method_by_name_desc(&self, name_desc: String) -> Option<Rc<MethodInfo>> {
         self.methods
             .iter()
             .find(|method| name_desc == method.get_name_desc())
+            .map(|method| Rc::clone(method))
     }
 }

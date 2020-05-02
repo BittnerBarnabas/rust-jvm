@@ -30,14 +30,12 @@ impl ClassLoader {
         }
     }
 
-    pub fn lookup_class(&self, qualified_name: String) -> Result<Rc<Klass>, JvmException> {
+    pub fn lookup_class(&self, qualified_name: String) -> Option<Rc<Klass>> {
         if let Some(klass_ref) = self.lookup_table.borrow().get(&qualified_name) {
-            return Ok(klass_ref.clone());
+            return Some(Rc::clone(klass_ref));
+        } else {
+            None
         }
-
-        self.load_class(qualified_name.clone())?;
-        //if load_class is successful, second call should definitely resolve the class
-        return self.lookup_class(qualified_name);
     }
 
     pub fn load_class(&self, qualified_name: String) -> Result<(), JvmException> {
@@ -52,6 +50,18 @@ impl ClassLoader {
         Ok(())
     }
 
+    pub fn find_or_load_class(&self, qualified_name: String) -> Result<Rc<Klass>, JvmException> {
+        match self.lookup_class(qualified_name.clone()) {
+            Some(klass) => Ok(klass),
+            _ => {
+                self.load_class(qualified_name.clone())?;
+                self.lookup_class(qualified_name.clone())
+                    .ok_or(JvmException::new())
+            }
+        }
+    }
+
+    //TODO Figure out what to do with Native methods
     fn bootstrap_class(&self, qualified_name: String) -> Result<(), JvmException> {
         let klass = ClassLoader::read_and_parse_class(&qualified_name)
             .map_err(|err| JvmException::from_string(err.to_string()))?;
@@ -70,14 +80,14 @@ impl ClassLoader {
         Ok(())
     }
 
-    pub fn lookup_method(&self, qualified_name: Qualifier) -> Result<MethodInfo, JvmException> {
+    pub fn lookup_method(&self, qualified_name: Qualifier) -> Result<Rc<MethodInfo>, JvmException> {
         match &qualified_name {
             Qualifier::MethodRef {
                 class_name,
                 name,
                 descriptor,
             } => {
-                let klass = self.lookup_class(class_name.clone())?;
+                let klass = self.find_or_load_class(class_name.clone())?;
                 klass
                     .get_method_by_qualified_name(qualified_name)
                     .ok_or(JvmException::new())

@@ -3,7 +3,7 @@ use crate::core::jvm_value::JvmValue;
 use crate::core::klass::access_flags::ACC_NATIVE;
 use crate::core::klass::attribute::AttributeInfo;
 use std::cell::Cell;
-use std::io::{Error, ErrorKind};
+use std::io::Error;
 
 type NativeMethod = fn() -> Result<JvmValue, JvmException>;
 
