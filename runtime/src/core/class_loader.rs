@@ -42,11 +42,12 @@ impl ClassLoader {
         let klass = ClassLoader::read_and_parse_class(&qualified_name)
             .map_err(|err| JvmException::from_string(err.to_string()))?;
 
-        self.call_cl_init(&klass);
-
+        let klass_ptr = Rc::new(klass);
         self.lookup_table
             .borrow_mut()
-            .insert(klass.get_qualified_name(), Rc::new(klass));
+            .insert(klass_ptr.get_qualified_name(), klass_ptr.clone());
+
+        self.call_cl_init(klass_ptr);
         Ok(())
     }
 
@@ -72,11 +73,12 @@ impl ClassLoader {
                 method.set_native_method(crate::core::native::native_methods::register_natives)
             });
 
-        self.call_cl_init(&klass);
-
+        let klass_ptr = Rc::new(klass);
         self.lookup_table
             .borrow_mut()
-            .insert(klass.get_qualified_name(), Rc::new(klass));
+            .insert(klass_ptr.get_qualified_name(), klass_ptr.clone());
+
+        self.call_cl_init(klass_ptr);
         Ok(())
     }
 
@@ -101,12 +103,12 @@ impl ClassLoader {
         Ok(())
     }
 
-    fn call_cl_init(&self, klass: &Klass) -> Option<Result<JvmValue, JvmException>> {
+    fn call_cl_init(&self, klass: Rc<Klass>) -> Option<Result<JvmValue, JvmException>> {
         klass
             .get_method_by_name_desc("<clinit>()V".to_string())
             .map(|init| {
-                let frame = StackFrame::new(self, klass);
-                frame.execute_method(init, klass)
+                let frame = StackFrame::new(self, &klass);
+                frame.execute_method(init, &klass)
             })
     }
 

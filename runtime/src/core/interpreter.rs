@@ -294,7 +294,9 @@ pub fn interpret(
                         .constant_pool
                         .get_qualified_name(index);
 
-                    let method_to_call = resolve_method(current_frame, qualified_method_name)?;
+                    let method_to_call = current_frame
+                        .class_loader()
+                        .lookup_method(qualified_method_name)?;
 
                     return current_frame
                         .execute_method(method_to_call, current_frame.current_class());
@@ -326,28 +328,5 @@ pub fn interpret(
             }
         }
         ip += 1;
-    }
-}
-
-fn resolve_method(
-    current_frame: &StackFrame,
-    qualified_name: Qualifier,
-) -> Result<Rc<MethodInfo>, JvmException> {
-    match &qualified_name {
-        Qualifier::MethodRef {
-            class_name,
-            name,
-            descriptor,
-        } => {
-            if *current_frame.current_class().get_qualified_name() == *class_name {
-                current_frame
-                    .current_class()
-                    .get_method_by_qualified_name(qualified_name)
-                    .ok_or(JvmException::new())
-            } else {
-                current_frame.class_loader().lookup_method(qualified_name)
-            }
-        }
-        _ => Err(JvmException::new()),
     }
 }
