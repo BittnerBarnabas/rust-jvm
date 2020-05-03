@@ -9,8 +9,6 @@ use crate::core::klass::constant_pool::{ConstantPool, CpInfo};
 use crate::core::klass::field::FieldInfo;
 use crate::core::klass::klass::Klass;
 use crate::core::klass::method::MethodInfo;
-use std::convert::TryInto;
-use std::ops::RangeFrom;
 
 const CLASS_MAGIC_NUMBER: u32 = 0xCAFEBABE;
 
@@ -38,7 +36,7 @@ impl ClassParser {
         let major_version = cursor.read_u16::<BigEndian>()?;
 
         let constant_pool_count = cursor.read_u16::<BigEndian>()?;
-        let mut constant_pool = ConstantPool::create(&mut cursor, constant_pool_count as usize)?;
+        let constant_pool = ConstantPool::create(&mut cursor, constant_pool_count as usize)?;
 
         ClassParserImpl {
             cursor,
@@ -100,7 +98,7 @@ impl ClassParserImpl {
             CpInfo::Class { name_index: index } => {
                 self.get_utf8_from_pool(index.clone()).map(|str| Some(str))
             }
-            other => Err(Error::new(
+            _ => Err(Error::new(
                 ErrorKind::Other,
                 format!("constant_pool[{}] should point to Class info!", ind),
             )),

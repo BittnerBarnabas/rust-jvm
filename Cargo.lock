@@ -45,6 +45,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tests"
+version = "0.1.0"
+dependencies = [
+ "runtime",
+]
+
+[[package]]
 name = "utils"
 version = "0.1.0"
 dependencies = [

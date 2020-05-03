@@ -9,3 +9,6 @@ edition = "2018"
 [dependencies]
 runtime = { path = "runtime"}
 utils = { path = "utils"}
+
+[workspace]
+members = ["runtime", "utils", "tests"]

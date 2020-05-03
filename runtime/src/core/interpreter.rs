@@ -1,14 +1,13 @@
 use crate::core::heap::jvm_object::Oop;
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
-use crate::core::klass::constant_pool;
 use crate::core::klass::constant_pool::Qualifier;
-use crate::core::klass::klass::Klass;
-use crate::core::klass::method::MethodInfo;
 use crate::core::opcode;
 use crate::core::stack_frame::StackFrame;
-use std::io::Cursor;
-use std::rc::Rc;
+
+#[cfg(test)]
+#[path = "./interpreter_test.rs"]
+mod interpreter_test;
 
 const DEFAULT_LOCAL_VARIABLE_STORE_SIZE: usize = 128;
 

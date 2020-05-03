@@ -73,7 +73,7 @@ impl Klass {
     ) -> Option<Rc<MethodInfo>> {
         return match qualified_name {
             Qualifier::MethodRef {
-                class_name,
+                class_name: _,
                 name,
                 descriptor,
             } => self.get_method_by_name_desc(format!("{}{}", name, descriptor)),

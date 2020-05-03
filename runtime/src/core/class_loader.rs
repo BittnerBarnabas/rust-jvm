@@ -2,17 +2,13 @@ use std::collections::HashMap;
 
 use crate::core::class_parser::ClassParser;
 use crate::core::heap::heap::JvmHeap;
-use crate::core::interpreter;
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
 use crate::core::klass::constant_pool::Qualifier;
 use crate::core::klass::klass::Klass;
 use crate::core::klass::method::MethodInfo;
-use crate::core::native::native_methods::register_natives;
 use crate::core::stack_frame::StackFrame;
-use std::borrow::Borrow;
-use std::cell::{Ref, RefCell};
-use std::fs::File;
+use std::cell::RefCell;
 use std::io::Error;
 use std::rc::Rc;
 
@@ -93,8 +89,8 @@ impl ClassLoader {
         match &qualified_name {
             Qualifier::MethodRef {
                 class_name,
-                name,
-                descriptor,
+                name: _,
+                descriptor: _,
             } => {
                 let klass = self.find_or_load_class(class_name.clone())?;
                 klass
@@ -106,7 +102,7 @@ impl ClassLoader {
     }
 
     pub fn bootstrap(&self) -> Result<(), JvmException> {
-        self.bootstrap_class(String::from("java/lang/Object"));
+        self.bootstrap_class(String::from("java/lang/Object"))?;
         Ok(())
     }
 
