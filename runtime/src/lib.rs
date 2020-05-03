@@ -1,4 +1,9 @@
 pub mod core {
+    pub mod heap {
+        pub mod heap;
+        pub mod jvm_object;
+    }
+
     pub mod native {
         pub mod native_methods;
     }
@@ -7,6 +12,7 @@ pub mod core {
         pub mod access_flags;
         pub mod attribute;
         pub mod constant_pool;
+        pub mod descriptor;
         pub mod field;
         pub mod klass;
         pub mod method;

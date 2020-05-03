@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::core::class_parser::ClassParser;
+use crate::core::heap::heap::JvmHeap;
 use crate::core::interpreter;
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
@@ -21,13 +22,19 @@ type ClassKey = String;
 
 pub struct ClassLoader {
     lookup_table: RefCell<HashMap<ClassKey, Rc<Klass>>>,
+    heap: Rc<JvmHeap>,
 }
 
 impl ClassLoader {
-    pub fn new() -> ClassLoader {
+    pub fn new(heap: Rc<JvmHeap>) -> ClassLoader {
         ClassLoader {
             lookup_table: RefCell::new(HashMap::new()),
+            heap,
         }
+    }
+
+    pub fn get_heap(&self) -> Rc<JvmHeap> {
+        self.heap.clone()
     }
 
     pub fn lookup_class(&self, qualified_name: String) -> Option<Rc<Klass>> {

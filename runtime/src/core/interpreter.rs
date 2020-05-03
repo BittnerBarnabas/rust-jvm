@@ -1,3 +1,4 @@
+use crate::core::heap::jvm_object::Oop;
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
 use crate::core::klass::constant_pool;
@@ -179,7 +180,11 @@ pub fn interpret(
                 &opcode::SASTORE => panic!("UnImplemented byte-code: SASTORE"),
                 &opcode::POP => panic!("UnImplemented byte-code: POP"),
                 &opcode::POP2 => panic!("UnImplemented byte-code: POP2"),
-                &opcode::DUP => panic!("UnImplemented byte-code: DUP"),
+                &opcode::DUP => {
+                    let val1 = eval_stack.pop();
+                    eval_stack.push(val1.clone());
+                    eval_stack.push(val1);
+                }
                 &opcode::DUP_X1 => panic!("UnImplemented byte-code: DUP_X1"),
                 &opcode::DUP_X2 => panic!("UnImplemented byte-code: DUP_X2"),
                 &opcode::DUP2 => panic!("UnImplemented byte-code: DUP2"),
@@ -282,12 +287,7 @@ pub fn interpret(
                 &opcode::INVOKEVIRTUAL => panic!("UnImplemented byte-code: INVOKEVIRTUAL"),
                 &opcode::INVOKESPECIAL => panic!("UnImplemented byte-code: INVOKESPECIAL"),
                 &opcode::INVOKESTATIC => {
-                    use byteorder::{BigEndian, ReadBytesExt};
-                    let mut cursor = Cursor::new(byte_codes);
-                    cursor.set_position(ip as u64 + 1);
-                    let index = cursor
-                        .read_u16::<BigEndian>()
-                        .map_err(|_| JvmException::new())?;
+                    let index = read_u16(byte_codes, &mut ip);
 
                     let qualified_method_name = current_frame
                         .current_class()
@@ -298,12 +298,34 @@ pub fn interpret(
                         .class_loader()
                         .lookup_method(qualified_method_name)?;
 
-                    return current_frame
-                        .execute_method(method_to_call, current_frame.current_class());
+                    eval_stack.push(
+                        current_frame
+                            .execute_method(method_to_call, current_frame.current_class())?,
+                    );
                 }
                 &opcode::INVOKEINTERFACE => panic!("UnImplemented byte-code: INVOKEINTERFACE"),
                 &opcode::INVOKEDYNAMIC => panic!("UnImplemented byte-code: INVOKEDYNAMIC"),
-                &opcode::NEW => panic!("UnImplemented byte-code: NEW"),
+                &opcode::NEW => {
+                    let index = read_u16(byte_codes, &mut ip);
+
+                    let qualified_klass_name = match current_frame
+                        .current_class()
+                        .constant_pool
+                        .get_qualified_name(index)
+                    {
+                        Qualifier::Class { name } => name,
+                        _ => return Err(JvmException::new()),
+                    };
+
+                    let klass = current_frame
+                        .class_loader()
+                        .find_or_load_class(qualified_klass_name)?;
+                    let new_obj = Oop::build_default_object(klass);
+
+                    let obj_ref = current_frame.class_loader().get_heap().store(new_obj)?;
+
+                    eval_stack.push(obj_ref);
+                }
                 &opcode::NEWARRAY => panic!("UnImplemented byte-code: NEWARRAY"),
                 &opcode::ANEWARRAY => panic!("UnImplemented byte-code: ANEWARRAY"),
                 &opcode::ARRAYLENGTH => panic!("UnImplemented byte-code: ARRAYLENGTH"),
@@ -329,4 +351,9 @@ pub fn interpret(
         }
         ip += 1;
     }
+}
+
+fn read_u16(byte_codes: &Vec<u8>, ip: &mut usize) -> u16 {
+    *ip += 2;
+    ((byte_codes[*ip - 1] as u16) << 8) + byte_codes[*ip] as u16
 }

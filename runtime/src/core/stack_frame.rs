@@ -1,4 +1,5 @@
 use crate::core::class_loader::ClassLoader;
+use crate::core::heap::heap::JvmHeap;
 use crate::core::interpreter;
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
@@ -10,6 +11,7 @@ pub struct StackFrame<'a> {
     previous: Option<&'a StackFrame<'a>>,
     class_loader: &'a ClassLoader,
     current_class: &'a Klass,
+    current_method: Option<Rc<MethodInfo>>,
 }
 
 impl<'a> StackFrame<'a> {
@@ -18,6 +20,7 @@ impl<'a> StackFrame<'a> {
             previous: None,
             class_loader,
             current_class,
+            current_method: None,
         }
     }
 
@@ -38,6 +41,7 @@ impl<'a> StackFrame<'a> {
             previous: Some(self),
             class_loader: self.class_loader,
             current_class: klass,
+            current_method: Some(method.clone()),
         };
 
         if method.is_native() {

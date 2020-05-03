@@ -1,5 +1,6 @@
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
+use crate::core::klass::access_flags;
 use crate::core::klass::access_flags::ACC_NATIVE;
 use crate::core::klass::attribute::AttributeInfo;
 use std::cell::Cell;
@@ -61,7 +62,7 @@ impl MethodInfo {
     }
 
     pub fn is_native(&self) -> bool {
-        self.access_flags & ACC_NATIVE != 0
+        access_flags::flag_matches(self.access_flags, ACC_NATIVE)
     }
 
     pub fn set_native_method(&self, method: NativeMethod) {

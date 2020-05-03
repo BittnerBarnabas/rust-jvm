@@ -2,12 +2,14 @@
 mod tests {
     use runtime::core::class_loader::ClassLoader;
     use runtime::core::class_parser::ClassParser;
+    use runtime::core::heap::heap::JvmHeap;
     use runtime::core::jvm_exception::JvmException;
     use runtime::core::jvm_value::JvmValue;
     use runtime::core::klass::constant_pool::Qualifier;
     use runtime::core::klass::klass::Klass;
     use runtime::core::stack_frame::StackFrame;
     use runtime::core::{interpreter, opcode};
+    use std::rc::Rc;
 
     #[test]
     pub fn storing_and_adding_local_integers() {
@@ -34,8 +36,10 @@ mod tests {
 
     #[test]
     pub fn test() {
-        let class_loader = ClassLoader::new();
+        let heap = Rc::new(JvmHeap::new());
+        let class_loader = ClassLoader::new(heap.clone());
         class_loader.bootstrap();
+        class_loader.load_class(String::from("mypack/SimpleMain"));
 
         let main_result = class_loader
             .find_or_load_class(String::from("mypack/SimpleMain"))

@@ -16,3 +16,7 @@ pub const ACC_BRIDGE: u16 = 0x0040;
 pub const ACC_VARARGS: u16 = 0x0080;
 pub const ACC_NATIVE: u16 = 0x0100;
 pub const ACC_STRICT: u16 = 0x0800;
+
+pub fn flag_matches(access_flags: u16, flag: u16) -> bool {
+    access_flags & flag != 0
+}
