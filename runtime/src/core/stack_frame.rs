@@ -1,5 +1,5 @@
 use crate::core::class_loader::ClassLoader;
-use crate::core::interpreter;
+use crate::core::interpreter::interpreter;
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
 use crate::core::klass::klass::Klass;
