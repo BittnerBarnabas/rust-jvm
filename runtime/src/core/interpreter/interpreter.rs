@@ -11,20 +11,17 @@ use crate::core::stack_frame::StackFrame;
 #[path = "./interpreter_test.rs"]
 mod interpreter_test;
 
-const DEFAULT_LOCAL_VARIABLE_STORE_SIZE: usize = 128;
-
 pub fn interpret(
     current_frame: &StackFrame,
     byte_codes: &Vec<u8>,
+    local_variables: &mut LocalVariableStore,
 ) -> Result<JvmValue, JvmException> {
     let mut ip = 0;
     let mut eval_stack = EvaluationStack::new();
-    let mut local_variables: LocalVariableStore =
-        LocalVariableStore::new(DEFAULT_LOCAL_VARIABLE_STORE_SIZE);
     loop {
         match byte_codes.get(ip) {
             Some(byte_code) => match byte_code {
-                &opcode::NOP => panic!("UnImplemented byte-code: NOP"),
+                &opcode::NOP => {}
                 &opcode::ACONST_NULL => panic!("UnImplemented byte-code: ACONST_NULL"),
                 &opcode::ICONST_M1 => eval_stack.i_constant(-1),
                 &opcode::ICONST_0 => eval_stack.i_constant(0),
@@ -40,19 +37,15 @@ pub fn interpret(
                 &opcode::FCONST_2 => panic!("UnImplemented byte-code: FCONST_2"),
                 &opcode::DCONST_0 => panic!("UnImplemented byte-code: DCONST_0"),
                 &opcode::DCONST_1 => panic!("UnImplemented byte-code: DCONST_1"),
-                &opcode::BIPUSH => {
-                    ip += 1;
-                    eval_stack.push(JvmValue::Int {
-                        val: byte_codes[ip] as i32,
-                    })
-                }
+                &opcode::BIPUSH => eval_stack.push(JvmValue::Int {
+                    val: read_u8(byte_codes, &mut ip) as i32,
+                }),
                 &opcode::SIPUSH => panic!("UnImplemented byte-code: SIPUSH"),
                 &opcode::LDC => panic!("UnImplemented byte-code: LDC"),
                 &opcode::LDC_W => panic!("UnImplemented byte-code: LDC_W"),
                 &opcode::LDC2_W => panic!("UnImplemented byte-code: LDC2_W"),
                 &opcode::ILOAD => {
-                    ip += 1;
-                    eval_stack.push(local_variables.load(byte_codes[ip]))
+                    eval_stack.push(local_variables.load(read_u8(byte_codes, &mut ip)))
                 }
                 &opcode::LLOAD => panic!("UnImplemented byte-code: LLOAD"),
                 &opcode::FLOAD => panic!("UnImplemented byte-code: FLOAD"),
@@ -87,8 +80,7 @@ pub fn interpret(
                 &opcode::CALOAD => panic!("UnImplemented byte-code: CALOAD"),
                 &opcode::SALOAD => panic!("UnImplemented byte-code: SALOAD"),
                 &opcode::ISTORE => {
-                    ip += 1;
-                    local_variables.store(eval_stack.pop(), byte_codes[ip])
+                    local_variables.store(eval_stack.pop(), read_u8(byte_codes, &mut ip))
                 }
                 &opcode::LSTORE => panic!("UnImplemented byte-code: LSTORE"),
                 &opcode::FSTORE => panic!("UnImplemented byte-code: FSTORE"),
@@ -295,6 +287,11 @@ pub fn interpret(
         }
         ip += 1;
     }
+}
+
+fn read_u8(byte_codes: &Vec<u8>, ip: &mut usize) -> u8 {
+    *ip += 1;
+    byte_codes[*ip]
 }
 
 fn read_u16(byte_codes: &Vec<u8>, ip: &mut usize) -> u16 {

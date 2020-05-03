@@ -1,10 +1,13 @@
 use crate::core::class_loader::ClassLoader;
 use crate::core::interpreter::interpreter;
+use crate::core::interpreter::local_variables::LocalVariableStore;
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
 use crate::core::klass::klass::Klass;
 use crate::core::klass::method::MethodInfo;
 use std::rc::Rc;
+
+const DEFAULT_LOCAL_VARIABLE_STORE_SIZE: usize = 128;
 
 pub struct StackFrame<'a> {
     previous: Option<&'a StackFrame<'a>>,
@@ -50,7 +53,9 @@ impl<'a> StackFrame<'a> {
 
         match method.get_code() {
             Some(code) => {
-                let result = interpreter::interpret(&next_frame, code);
+                let mut local_variables: LocalVariableStore =
+                    LocalVariableStore::new(DEFAULT_LOCAL_VARIABLE_STORE_SIZE);
+                let result = interpreter::interpret(&next_frame, code, &mut local_variables);
                 return result;
             }
             _ => Err(JvmException::new()),
