@@ -1,4 +1,6 @@
 use crate::core::heap::jvm_object::Oop;
+use crate::core::interpreter::evaluation_stack::EvaluationStack;
+use crate::core::interpreter::local_variables::LocalVariableStore;
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
 use crate::core::klass::constant_pool::Qualifier;
@@ -10,63 +12,6 @@ use crate::core::stack_frame::StackFrame;
 mod interpreter_test;
 
 const DEFAULT_LOCAL_VARIABLE_STORE_SIZE: usize = 128;
-
-struct EvaluationStack {
-    stack: Vec<JvmValue>,
-}
-
-impl EvaluationStack {
-    pub fn new() -> EvaluationStack {
-        EvaluationStack { stack: Vec::new() }
-    }
-
-    pub fn add(&mut self) -> () {
-        let rhs = self.stack.pop().expect("A value is expected in the stack!");
-        let lhs = self.stack.pop().expect("A value is expected in the stack!");
-
-        match (lhs, rhs) {
-            (JvmValue::Int { val: lhs_val }, JvmValue::Int { val: rhs_val }) => {
-                self.stack.push(JvmValue::Int {
-                    val: lhs_val + rhs_val,
-                })
-            }
-            (lhs, rhs) => panic!(format!("Cannot add 2 values of type: {} {}", lhs, rhs)),
-        }
-    }
-
-    pub fn i_constant(&mut self, constant: i32) -> () {
-        self.stack.push(JvmValue::Int { val: constant })
-    }
-
-    pub fn pop(&mut self) -> JvmValue {
-        self.stack.pop().expect("Cannot pop from empty stack!")
-    }
-
-    pub fn push(&mut self, value: JvmValue) {
-        self.stack.push(value);
-    }
-}
-
-struct LocalVariableStore {
-    store: Vec<JvmValue>,
-}
-
-impl LocalVariableStore {
-    pub fn new(init_size: usize) -> LocalVariableStore {
-        let mut store: Vec<JvmValue> = Vec::with_capacity(init_size);
-        store.resize(init_size, JvmValue::null_obj());
-
-        LocalVariableStore { store }
-    }
-
-    pub fn store(&mut self, var: JvmValue, ind: u8) {
-        self.store[ind as usize] = var;
-    }
-
-    pub fn load(&self, ind: u8) -> JvmValue {
-        self.store[ind as usize].clone()
-    }
-}
 
 pub fn interpret(
     current_frame: &StackFrame,
