@@ -1,4 +1,10 @@
 use crate::core::jvm_value::JvmValue;
+use mockall::*;
+
+pub trait JvmLocalVariableStore {
+    fn store(&mut self, var: JvmValue, ind: u8);
+    fn load(&self, ind: u8) -> JvmValue;
+}
 
 pub struct LocalVariableStore {
     store: Vec<JvmValue>,
@@ -11,12 +17,15 @@ impl LocalVariableStore {
 
         LocalVariableStore { store }
     }
+}
 
-    pub fn store(&mut self, var: JvmValue, ind: u8) {
+#[automock]
+impl JvmLocalVariableStore for LocalVariableStore {
+    fn store(&mut self, var: JvmValue, ind: u8) {
         self.store[ind as usize] = var;
     }
 
-    pub fn load(&self, ind: u8) -> JvmValue {
+    fn load(&self, ind: u8) -> JvmValue {
         self.store[ind as usize].clone()
     }
 }

@@ -7,7 +7,7 @@ use crate::core::jvm_value::JvmValue;
 use crate::core::klass::constant_pool::Qualifier;
 use crate::core::klass::klass::Klass;
 use crate::core::klass::method::MethodInfo;
-use crate::core::stack_frame::StackFrame;
+use crate::core::stack_frame::{JvmStackFrame, StackFrame};
 use std::cell::RefCell;
 use std::io::Error;
 use std::rc::Rc;

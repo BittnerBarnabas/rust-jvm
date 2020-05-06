@@ -5,9 +5,20 @@ use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
 use crate::core::klass::klass::Klass;
 use crate::core::klass::method::MethodInfo;
+use mockall::*;
 use std::rc::Rc;
 
 const DEFAULT_LOCAL_VARIABLE_STORE_SIZE: usize = 128;
+
+pub trait JvmStackFrame {
+    fn class_loader(&self) -> &ClassLoader;
+    fn current_class(&self) -> &Klass;
+    fn execute_method(
+        &self,
+        method: Rc<MethodInfo>,
+        klass: &Klass,
+    ) -> Result<JvmValue, JvmException>;
+}
 
 pub struct StackFrame<'a> {
     previous: Option<&'a StackFrame<'a>>,
@@ -25,16 +36,19 @@ impl<'a> StackFrame<'a> {
             current_method: None,
         }
     }
+}
 
-    pub fn class_loader(&self) -> &ClassLoader {
+#[automock]
+impl JvmStackFrame for StackFrame<'_> {
+    fn class_loader(&self) -> &ClassLoader {
         self.class_loader
     }
 
-    pub fn current_class(&self) -> &Klass {
+    fn current_class(&self) -> &Klass {
         self.current_class
     }
 
-    pub fn execute_method(
+    fn execute_method(
         &self,
         method: Rc<MethodInfo>,
         klass: &Klass,

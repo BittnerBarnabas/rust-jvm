@@ -1,20 +1,20 @@
 use crate::core::heap::jvm_object::Oop;
 use crate::core::interpreter::evaluation_stack::EvaluationStack;
-use crate::core::interpreter::local_variables::LocalVariableStore;
+use crate::core::interpreter::local_variables::JvmLocalVariableStore;
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
 use crate::core::klass::constant_pool::Qualifier;
 use crate::core::opcode;
-use crate::core::stack_frame::StackFrame;
+use crate::core::stack_frame::JvmStackFrame;
 
 #[cfg(test)]
 #[path = "./interpreter_test.rs"]
 mod interpreter_test;
 
 pub fn interpret(
-    current_frame: &StackFrame,
+    current_frame: &impl JvmStackFrame,
     byte_codes: &Vec<u8>,
-    local_variables: &mut LocalVariableStore,
+    local_variables: &mut impl JvmLocalVariableStore,
 ) -> Result<JvmValue, JvmException> {
     let mut ip = 0;
     let mut eval_stack = EvaluationStack::new();

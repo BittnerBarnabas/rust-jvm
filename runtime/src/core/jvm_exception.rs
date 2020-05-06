@@ -1,3 +1,4 @@
+#[derive(Debug, PartialEq)]
 pub struct JvmException {
     message: Option<String>,
 }

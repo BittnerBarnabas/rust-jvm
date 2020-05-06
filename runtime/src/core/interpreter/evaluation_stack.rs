@@ -1,9 +1,15 @@
 use crate::core::jvm_value::JvmValue;
+use mockall::*;
+
+#[cfg(test)]
+#[path = "./evaluation_stack_test.rs"]
+mod evaluation_stack_test;
 
 pub struct EvaluationStack {
     stack: Vec<JvmValue>,
 }
 
+#[automock]
 impl EvaluationStack {
     pub fn new() -> EvaluationStack {
         EvaluationStack { stack: Vec::new() }
