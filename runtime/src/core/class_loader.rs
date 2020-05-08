@@ -50,7 +50,7 @@ impl ClassLoader {
             .borrow_mut()
             .insert(klass_ptr.get_qualified_name(), klass_ptr.clone());
 
-        self.call_cl_init(klass_ptr);
+        self.call_cl_init(klass_ptr).unwrap_or_else(|| Ok(()))?;
         Ok(())
     }
 
@@ -81,7 +81,7 @@ impl ClassLoader {
             .borrow_mut()
             .insert(klass_ptr.get_qualified_name(), klass_ptr.clone());
 
-        self.call_cl_init(klass_ptr);
+        self.call_cl_init(klass_ptr).unwrap_or_else(|| Ok(()))?;
         Ok(())
     }
 
@@ -106,12 +106,13 @@ impl ClassLoader {
         Ok(())
     }
 
-    fn call_cl_init(&self, klass: Rc<Klass>) -> Option<Result<JvmValue, JvmException>> {
+    fn call_cl_init(&self, klass: Rc<Klass>) -> Option<Result<(), JvmException>> {
         klass
             .get_method_by_name_desc("<clinit>()V".to_string())
             .map(|init| {
                 let frame = StackFrame::new(self, &klass);
-                frame.execute_method(init, &klass)
+                frame.execute_method(init, &klass)?;
+                Ok(())
             })
     }
 
