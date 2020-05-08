@@ -232,7 +232,7 @@ pub fn interpret(
 
                     let method_to_call = current_frame
                         .class_loader()
-                        .lookup_method(qualified_method_name)?;
+                        .lookup_static_method(qualified_method_name)?;
 
                     eval_stack.push(
                         current_frame

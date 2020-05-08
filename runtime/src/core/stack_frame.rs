@@ -8,8 +8,6 @@ use crate::core::klass::method::MethodInfo;
 use mockall::*;
 use std::rc::Rc;
 
-const DEFAULT_LOCAL_VARIABLE_STORE_SIZE: usize = 128;
-
 pub trait JvmStackFrame {
     fn class_loader(&self) -> &ClassLoader;
     fn current_class(&self) -> &Klass;
@@ -61,15 +59,16 @@ impl JvmStackFrame for StackFrame<'_> {
         };
 
         if method.is_native() {
-            let native_fn = method.get_native_method().ok_or(JvmException::new())?;
+            let native_fn = method.native_method().ok_or(JvmException::new())?;
             return native_fn();
         }
 
-        match method.get_code() {
-            Some(code) => {
+        match method.code_info() {
+            Some(code_info) => {
                 let mut local_variables: LocalVariableStore =
-                    LocalVariableStore::new(DEFAULT_LOCAL_VARIABLE_STORE_SIZE);
-                let result = interpreter::interpret(&next_frame, code, &mut local_variables);
+                    LocalVariableStore::new(code_info.local_variables() as usize);
+                let result =
+                    interpreter::interpret(&next_frame, code_info.bytes(), &mut local_variables);
                 return result;
             }
             _ => Err(JvmException::new()),

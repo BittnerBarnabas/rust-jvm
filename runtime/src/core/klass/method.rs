@@ -20,7 +20,30 @@ pub struct MethodInfo {
     descriptor: String,
     attributes: Vec<AttributeInfo>,
     native_method: Cell<Option<NativeMethod>>,
-    code: Option<Vec<u8>>,
+    code: Option<CodeInfo>,
+}
+
+#[derive(Clone)]
+pub struct CodeInfo {
+    bytes: Vec<u8>,
+    local_variables: u16,
+}
+
+impl CodeInfo {
+    pub fn new(bytes: Vec<u8>, local_variables: u16) -> Self {
+        CodeInfo {
+            bytes,
+            local_variables,
+        }
+    }
+
+    pub fn bytes(&self) -> &Vec<u8> {
+        return &self.bytes;
+    }
+
+    pub fn local_variables(&self) -> u16 {
+        return self.local_variables.clone();
+    }
 }
 
 impl MethodInfo {
@@ -41,23 +64,25 @@ impl MethodInfo {
         })
     }
 
-    fn resolve_code(attributes: &Vec<AttributeInfo>) -> Option<Vec<u8>> {
+    fn resolve_code(attributes: &Vec<AttributeInfo>) -> Option<CodeInfo> {
         let code = attributes.iter().find(|att| match att {
             AttributeInfo::Code { .. } => true,
             _ => false,
         });
 
         return match code {
-            Some(AttributeInfo::Code { code, .. }) => Some(code.clone()),
+            Some(AttributeInfo::Code {
+                code, max_locals, ..
+            }) => Some(CodeInfo::new(code.clone(), max_locals.clone())),
             _ => None,
         };
     }
 
-    pub fn get_name_desc(&self) -> String {
+    pub fn name_desc(&self) -> String {
         format!("{}{}", self.name, self.descriptor)
     }
 
-    pub fn get_code(&self) -> &Option<Vec<u8>> {
+    pub fn code_info(&self) -> &Option<CodeInfo> {
         &self.code
     }
 
@@ -69,7 +94,7 @@ impl MethodInfo {
         self.native_method.set(Some(method))
     }
 
-    pub fn get_native_method(&self) -> Option<NativeMethod> {
+    pub fn native_method(&self) -> Option<NativeMethod> {
         self.native_method.get()
     }
 }

@@ -85,7 +85,10 @@ impl ClassLoader {
         Ok(())
     }
 
-    pub fn lookup_method(&self, qualified_name: Qualifier) -> Result<Rc<MethodInfo>, JvmException> {
+    pub fn lookup_static_method(
+        &self,
+        qualified_name: Qualifier,
+    ) -> Result<Rc<MethodInfo>, JvmException> {
         match &qualified_name {
             Qualifier::MethodRef {
                 class_name,

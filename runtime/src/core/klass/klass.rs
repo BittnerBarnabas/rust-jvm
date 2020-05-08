@@ -84,7 +84,7 @@ impl Klass {
     pub fn get_method_by_name_desc(&self, name_desc: String) -> Option<Rc<MethodInfo>> {
         self.methods
             .iter()
-            .find(|method| name_desc == method.get_name_desc())
+            .find(|method| name_desc == method.name_desc())
             .map(|method| Rc::clone(method))
     }
 }
