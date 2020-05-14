@@ -11,8 +11,9 @@ use crate::core::stack_frame::{JvmStackFrame, StackFrame};
 use std::cell::RefCell;
 use std::io::Error;
 use std::rc::Rc;
+use utils::ResultIterator;
 
-static RESOURCES_PATH: &str = "../resources/";
+static RESOURCES_PATH: &str = "resources/";
 
 type ClassKey = String;
 
@@ -45,12 +46,16 @@ impl ClassLoader {
         let klass = ClassLoader::read_and_parse_class(&qualified_name)
             .map_err(|err| JvmException::from_string(err.to_string()))?;
 
-        let klass_ptr = Rc::new(klass);
+        let referenced_classes = klass.referenced_classes();
         self.lookup_table
             .borrow_mut()
-            .insert(klass_ptr.get_qualified_name(), klass_ptr.clone());
+            .insert(klass.qualified_name(), Rc::new(klass));
 
-        self.call_cl_init(klass_ptr).unwrap_or_else(|| Ok(()))?;
+        referenced_classes
+            .iter()
+            .map(|class_name| self.find_or_load_class(class_name.clone()))
+            .collect_to_result()?;
+
         Ok(())
     }
 
@@ -65,24 +70,10 @@ impl ClassLoader {
         }
     }
 
-    //TODO Figure out what to do with Native methods
-    fn bootstrap_class(&self, qualified_name: String) -> Result<(), JvmException> {
-        let klass = ClassLoader::read_and_parse_class(&qualified_name)
-            .map_err(|err| JvmException::from_string(err.to_string()))?;
-
-        klass
-            .get_method_by_name_desc("registerNatives()V".to_string())
-            .map(|method| {
-                method.set_native_method(crate::core::native::native_methods::register_natives)
-            });
-
-        let klass_ptr = Rc::new(klass);
-        self.lookup_table
-            .borrow_mut()
-            .insert(klass_ptr.get_qualified_name(), klass_ptr.clone());
-
-        self.call_cl_init(klass_ptr).unwrap_or_else(|| Ok(()))?;
-        Ok(())
+    pub fn load_init_class(&self, qualified_name: String) -> Result<Rc<Klass>, JvmException> {
+        let klass = self.find_or_load_class(qualified_name)?;
+        self.call_cl_init(klass.clone()).unwrap_or_else(|| Ok(()))?;
+        Ok(klass)
     }
 
     pub fn lookup_static_method(
@@ -105,7 +96,19 @@ impl ClassLoader {
     }
 
     pub fn bootstrap(&self) -> Result<(), JvmException> {
-        self.bootstrap_class(String::from("java/lang/Object"))?;
+        let object = self.find_or_load_class(String::from("java/lang/Object"))?;
+        object
+            .get_method_by_name_desc("registerNatives()V".to_string())
+            .map(|method| {
+                method.set_native_method(crate::core::native::native_methods::register_natives)
+            });
+
+        self.lookup_table
+            .borrow()
+            .iter()
+            .map(|(key, klass)| self.call_cl_init(klass.clone()).unwrap_or_else(|| Ok(())))
+            .collect_to_result()?;
+
         Ok(())
     }
 
@@ -126,7 +129,8 @@ impl ClassLoader {
 
     fn read_from_resources(class_name: &String) -> Result<Vec<u8>, Error> {
         let path = ClassLoader::class_name_to_path(class_name);
-        std::fs::read(format!("{}{}", RESOURCES_PATH, path))
+        let absolute_path = format!("{}{}", RESOURCES_PATH, path);
+        std::fs::read(absolute_path)
     }
 
     fn class_name_to_path(class_name: &String) -> String {

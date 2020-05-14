@@ -14,7 +14,7 @@ pub enum Oop {
 impl Oop {
     pub fn build_default_object(klass: Rc<Klass>) -> Oop {
         let instance_data: Vec<JvmValue> = klass
-            .instance_fields
+            .instance_fields()
             .iter()
             .map(|f| f.get_default())
             .collect();

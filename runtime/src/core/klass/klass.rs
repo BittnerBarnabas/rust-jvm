@@ -4,20 +4,21 @@ use crate::core::klass::attribute::AttributeInfo;
 use crate::core::klass::constant_pool::{ConstantPool, Qualifier};
 use crate::core::klass::field::FieldInfo;
 use crate::core::klass::method::MethodInfo;
+use std::cell::{Cell, Ref, RefCell};
 
-#[derive(Clone)]
 pub struct Klass {
-    pub minor_version: u16,
-    pub major_version: u16,
-    pub constant_pool: ConstantPool,
-    pub access_flags: u16,
-    pub this_class: String,
-    pub super_class: Option<String>,
-    pub interfaces: Vec<String>,
-    pub instance_fields: Vec<Rc<FieldInfo>>,
-    pub static_fields: Vec<Rc<FieldInfo>>,
-    pub methods: Vec<Rc<MethodInfo>>,
-    pub attributes: Vec<AttributeInfo>,
+    minor_version: u16,
+    major_version: u16,
+    constant_pool: ConstantPool,
+    access_flags: u16,
+    this_class: String,
+    super_class_name: Option<String>,
+    super_class: RefCell<Option<Rc<Klass>>>,
+    interfaces: Vec<String>,
+    instance_fields: Vec<Rc<FieldInfo>>,
+    static_fields: Vec<Rc<FieldInfo>>,
+    methods: Vec<Rc<MethodInfo>>,
+    attributes: Vec<AttributeInfo>,
 }
 
 impl Klass {
@@ -27,7 +28,7 @@ impl Klass {
         constant_pool: ConstantPool,
         access_flags: u16,
         this_class: String,
-        super_class: Option<String>,
+        super_class_name: Option<String>,
         interfaces: Vec<String>,
         fields: Vec<FieldInfo>,
         methods: Vec<MethodInfo>,
@@ -50,7 +51,8 @@ impl Klass {
             constant_pool,
             access_flags,
             this_class,
-            super_class,
+            super_class_name,
+            super_class: RefCell::new(None),
             interfaces,
             instance_fields,
             static_fields,
@@ -59,12 +61,34 @@ impl Klass {
         }
     }
 
-    pub fn get_instance_fields(&self) -> Vec<Rc<FieldInfo>> {
-        self.instance_fields.iter().map(|f| f.clone()).collect()
+    pub fn qualified_name(&self) -> String {
+        self.this_class.clone()
     }
 
-    pub fn get_qualified_name(&self) -> String {
-        self.this_class.clone()
+    pub fn qualified_super_name(&self) -> Option<String> {
+        self.super_class_name.clone()
+    }
+
+    pub fn super_class(&self) -> Ref<Option<Rc<Klass>>> {
+        self.super_class.borrow()
+    }
+
+    pub fn set_super_class(&self, super_class: Rc<Klass>) {
+        self.super_class.borrow_mut().replace(super_class);
+    }
+
+    pub fn instance_fields(&self) -> &Vec<Rc<FieldInfo>> {
+        &self.instance_fields
+    }
+
+    pub fn constant_pool(&self) -> &ConstantPool {
+        &self.constant_pool
+    }
+
+    pub fn referenced_classes(&self) -> Vec<String> {
+        self.super_class_name
+            .as_ref()
+            .map_or(Vec::new(), |name| vec![name.clone()])
     }
 
     pub fn get_method_by_qualified_name(

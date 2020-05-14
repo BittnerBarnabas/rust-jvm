@@ -227,7 +227,7 @@ pub fn interpret(
 
                     let qualified_method_name = current_frame
                         .current_class()
-                        .constant_pool
+                        .constant_pool()
                         .get_qualified_name(index);
 
                     let method_to_call = current_frame
@@ -246,7 +246,7 @@ pub fn interpret(
 
                     let qualified_klass_name = match current_frame
                         .current_class()
-                        .constant_pool
+                        .constant_pool()
                         .get_qualified_name(index)
                     {
                         Qualifier::Class { name } => name,
