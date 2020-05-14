@@ -5,6 +5,7 @@ use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
 use crate::core::klass::klass::Klass;
 use crate::core::klass::method::MethodInfo;
+use crate::core::native::native_methods::NativeMethodArgs;
 use mockall::*;
 use std::rc::Rc;
 
@@ -60,7 +61,7 @@ impl JvmStackFrame for StackFrame<'_> {
 
         if method.is_native() {
             let native_fn = method.native_method().ok_or(JvmException::new())?;
-            return native_fn();
+            return native_fn(NativeMethodArgs::new(klass, self.class_loader));
         }
 
         match method.code_info() {

@@ -3,10 +3,9 @@ use crate::core::jvm_value::JvmValue;
 use crate::core::klass::access_flags;
 use crate::core::klass::access_flags::ACC_NATIVE;
 use crate::core::klass::attribute::AttributeInfo;
+use crate::core::native::native_methods::NativeMethod;
 use std::cell::Cell;
 use std::io::Error;
-
-type NativeMethod = fn() -> Result<JvmValue, JvmException>;
 
 pub struct MethodReference {
     pub class_name: String,

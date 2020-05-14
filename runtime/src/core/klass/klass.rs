@@ -5,6 +5,7 @@ use crate::core::klass::constant_pool::{ConstantPool, Qualifier};
 use crate::core::klass::field::FieldInfo;
 use crate::core::klass::method::MethodInfo;
 use std::cell::{Cell, Ref, RefCell};
+use std::slice::Iter;
 
 pub struct Klass {
     minor_version: u16,
@@ -110,5 +111,16 @@ impl Klass {
             .iter()
             .find(|method| name_desc == method.name_desc())
             .map(|method| Rc::clone(method))
+    }
+
+    pub fn register_natives(&self) {
+        self.get_method_by_name_desc("registerNatives()V".to_string())
+            .map(|method| {
+                method.set_native_method(crate::core::native::native_methods::register_natives)
+            });
+    }
+
+    pub fn methods(&self) -> &Vec<Rc<MethodInfo>> {
+        &self.methods
     }
 }

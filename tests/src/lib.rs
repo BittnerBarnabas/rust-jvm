@@ -6,6 +6,7 @@ mod tests {
     use runtime::core::jvm_value::JvmValue;
     use runtime::core::klass::constant_pool::Qualifier;
     use runtime::core::klass::klass::Klass;
+    use runtime::core::native::native_method_repo::NativeMethodRepo;
     use runtime::core::stack_frame::{JvmStackFrame, StackFrame};
     use std::rc::Rc;
 
@@ -45,8 +46,9 @@ mod tests {
     //
     #[test]
     pub fn test() {
+        let native_method_repo = Rc::new(NativeMethodRepo::new());
         let heap = Rc::new(JvmHeap::new());
-        let class_loader = ClassLoader::new(heap.clone());
+        let class_loader = ClassLoader::new(heap.clone(), native_method_repo.clone());
         let result = class_loader.bootstrap();
 
         let main_result = class_loader

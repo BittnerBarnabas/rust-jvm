@@ -7,6 +7,7 @@ use crate::core::jvm_value::JvmValue;
 use crate::core::klass::constant_pool::Qualifier;
 use crate::core::klass::klass::Klass;
 use crate::core::klass::method::MethodInfo;
+use crate::core::native::native_method_repo::NativeMethodRepo;
 use crate::core::stack_frame::{JvmStackFrame, StackFrame};
 use std::cell::RefCell;
 use std::io::Error;
@@ -20,13 +21,15 @@ type ClassKey = String;
 pub struct ClassLoader {
     lookup_table: RefCell<HashMap<ClassKey, Rc<Klass>>>,
     heap: Rc<JvmHeap>,
+    native_method_repo: Rc<NativeMethodRepo>,
 }
 
 impl ClassLoader {
-    pub fn new(heap: Rc<JvmHeap>) -> ClassLoader {
+    pub fn new(heap: Rc<JvmHeap>, native_method_repo: Rc<NativeMethodRepo>) -> ClassLoader {
         ClassLoader {
             lookup_table: RefCell::new(HashMap::new()),
             heap,
+            native_method_repo,
         }
     }
 
@@ -47,6 +50,9 @@ impl ClassLoader {
             .map_err(|err| JvmException::from_string(err.to_string()))?;
 
         let referenced_classes = klass.referenced_classes();
+
+        klass.register_natives(); //registering if there's a registerNatives method
+
         self.lookup_table
             .borrow_mut()
             .insert(klass.qualified_name(), Rc::new(klass));
@@ -97,11 +103,6 @@ impl ClassLoader {
 
     pub fn bootstrap(&self) -> Result<(), JvmException> {
         let object = self.find_or_load_class(String::from("java/lang/Object"))?;
-        object
-            .get_method_by_name_desc("registerNatives()V".to_string())
-            .map(|method| {
-                method.set_native_method(crate::core::native::native_methods::register_natives)
-            });
 
         self.lookup_table
             .borrow()
