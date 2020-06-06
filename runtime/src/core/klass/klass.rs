@@ -3,9 +3,18 @@ use std::rc::Rc;
 use crate::core::klass::attribute::AttributeInfo;
 use crate::core::klass::constant_pool::{ConstantPool, Qualifier};
 use crate::core::klass::field::FieldInfo;
+use crate::core::klass::klass::ClassLoadingStatus::{Initialized, Linked, Loaded, Mentioned};
 use crate::core::klass::method::MethodInfo;
 use std::cell::{Cell, Ref, RefCell};
 use std::slice::Iter;
+
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
+pub enum ClassLoadingStatus {
+    Mentioned,
+    Loaded,
+    Linked,
+    Initialized,
+}
 
 pub struct Klass {
     minor_version: u16,
@@ -20,6 +29,7 @@ pub struct Klass {
     static_fields: Vec<Rc<FieldInfo>>,
     methods: Vec<Rc<MethodInfo>>,
     attributes: Vec<AttributeInfo>,
+    status: Cell<ClassLoadingStatus>,
 }
 
 impl Klass {
@@ -59,6 +69,7 @@ impl Klass {
             static_fields,
             methods,
             attributes,
+            status: Cell::new(Mentioned),
         }
     }
 
@@ -78,8 +89,18 @@ impl Klass {
         self.super_class.borrow_mut().replace(super_class);
     }
 
+    pub fn interfaces(&self) -> Vec<String> {
+        self.interfaces.iter().cloned().collect()
+    }
+
     pub fn instance_fields(&self) -> &Vec<Rc<FieldInfo>> {
         &self.instance_fields
+    }
+
+    pub fn initialize_static_fields(&self) {
+        self.static_fields
+            .iter()
+            .for_each(|f| f.set_static_value(f.default()))
     }
 
     pub fn constant_pool(&self) -> &ConstantPool {
@@ -90,6 +111,26 @@ impl Klass {
         self.super_class_name
             .as_ref()
             .map_or(Vec::new(), |name| vec![name.clone()])
+    }
+
+    pub fn is_mentioned(&self) -> bool {
+        self.status.get() >= Mentioned
+    }
+
+    pub fn is_loaded(&self) -> bool {
+        self.status.get() >= Loaded
+    }
+
+    pub fn is_linked(&self) -> bool {
+        self.status.get() >= Linked
+    }
+
+    pub fn is_initialized(&self) -> bool {
+        self.status.get() >= Initialized
+    }
+
+    pub fn set_status(&self, status: ClassLoadingStatus) {
+        self.status.replace(status);
     }
 
     pub fn get_method_by_qualified_name(

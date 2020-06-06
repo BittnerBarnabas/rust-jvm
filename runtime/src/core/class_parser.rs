@@ -133,12 +133,12 @@ impl ClassParserImpl {
         let descriptor_index = self.cursor.read_u16::<BigEndian>()?;
         let attributes = self.parse_attributes()?;
 
-        return Ok(FieldInfo {
+        return Ok(FieldInfo::new(
             access_flags,
             name,
-            descriptor: self.get_utf8_from_pool(descriptor_index)?,
+            self.get_utf8_from_pool(descriptor_index)?,
             attributes,
-        });
+        ));
     }
 
     fn parse_methods(&mut self) -> Result<Vec<MethodInfo>, Error> {

@@ -2,21 +2,50 @@ use crate::core::jvm_value::JvmValue;
 use crate::core::klass::access_flags;
 use crate::core::klass::access_flags::ACC_STATIC;
 use crate::core::klass::attribute::AttributeInfo;
+use std::cell::Cell;
 
 #[derive(Clone)]
 pub struct FieldInfo {
-    pub access_flags: u16,
-    pub name: String,
-    pub descriptor: String,
-    pub attributes: Vec<AttributeInfo>,
+    access_flags: u16,
+    name: String,
+    descriptor: String,
+    attributes: Vec<AttributeInfo>,
+    static_value: Cell<Option<JvmValue>>,
 }
 
 impl FieldInfo {
+    pub fn new(
+        access_flags: u16,
+        name: String,
+        descriptor: String,
+        attributes: Vec<AttributeInfo>,
+    ) -> FieldInfo {
+        FieldInfo {
+            access_flags,
+            name,
+            descriptor,
+            attributes,
+            static_value: Cell::new(None),
+        }
+    }
+
     pub fn is_static(&self) -> bool {
         access_flags::flag_matches(self.access_flags, ACC_STATIC)
     }
 
-    pub fn get_default(&self) -> JvmValue {
+    /// Will return the stored static value, it's only valid on static fields.
+    /// Should check before, using `FieldInfo::is_static`
+    pub fn static_value(&self) -> JvmValue {
+        assert!(self.is_static());
+        self.static_value.get().expect("Should not happen.").clone()
+    }
+
+    pub fn set_static_value(&self, value: JvmValue) {
+        assert!(self.is_static());
+        self.static_value.set(Some(value))
+    }
+
+    pub fn default(&self) -> JvmValue {
         match self.descriptor.as_str() {
             "Z" => JvmValue::Boolean { val: false },
             "B" => JvmValue::Byte { val: 0 },

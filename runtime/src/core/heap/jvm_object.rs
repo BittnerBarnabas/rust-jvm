@@ -16,7 +16,7 @@ impl Oop {
         let instance_data: Vec<JvmValue> = klass
             .instance_fields()
             .iter()
-            .map(|f| f.get_default())
+            .map(|f| f.default())
             .collect();
 
         Oop::ObjectOop {

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use runtime::core::class_loader::ClassLoader;
+    use runtime::core::class_loader::{BootstrapClassLoader, ClassLoader, ResourceLocator};
     use runtime::core::heap::heap::JvmHeap;
     use runtime::core::jvm_exception::JvmException;
     use runtime::core::jvm_value::JvmValue;
@@ -70,5 +70,17 @@ mod tests {
             let frame = StackFrame::new(&class_loader, &klass);
             frame.execute_method(method, &klass)
         })
+    }
+
+    #[test]
+    pub fn testBootStrapLoader() {
+        let locator = ResourceLocator::new(String::from(
+            "/home/barnab/CLionProjects/rust-jvm/resources",
+        ));
+        let loader = BootstrapClassLoader::new(locator);
+        let result = loader
+            .load_class(String::from("java/lang/Object"))
+            .expect("Should be able to load Object!");
+        println!("ABC");
     }
 }
