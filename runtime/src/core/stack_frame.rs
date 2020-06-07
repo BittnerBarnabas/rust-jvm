@@ -1,4 +1,6 @@
 use crate::core::class_loader::ClassLoader;
+use crate::core::context::GlobalContext;
+use crate::core::heap::heap::JvmHeap;
 use crate::core::interpreter::interpreter;
 use crate::core::interpreter::local_variables::LocalVariableStore;
 use crate::core::jvm_exception::JvmException;
@@ -10,27 +12,28 @@ use mockall::*;
 use std::rc::Rc;
 
 pub trait JvmStackFrame {
-    fn class_loader(&self) -> &ClassLoader;
-    fn current_class(&self) -> &Klass;
+    fn class_loader(&self) -> Rc<dyn ClassLoader>;
+    fn heap(&self) -> Rc<JvmHeap>;
+    fn current_class(&self) -> Rc<Klass>;
     fn execute_method(
         &self,
         method: Rc<MethodInfo>,
-        klass: &Klass,
+        klass: Rc<Klass>,
     ) -> Result<JvmValue, JvmException>;
 }
 
 pub struct StackFrame<'a> {
     previous: Option<&'a StackFrame<'a>>,
-    class_loader: &'a ClassLoader,
-    current_class: &'a Klass,
+    context: &'a GlobalContext,
+    current_class: Rc<Klass>,
     current_method: Option<Rc<MethodInfo>>,
 }
 
 impl<'a> StackFrame<'a> {
-    pub fn new(class_loader: &'a ClassLoader, current_class: &'a Klass) -> StackFrame<'a> {
+    pub fn new(context: &'a GlobalContext, current_class: Rc<Klass>) -> StackFrame<'a> {
         StackFrame {
             previous: None,
-            class_loader,
+            context,
             current_class,
             current_method: None,
         }
@@ -39,29 +42,38 @@ impl<'a> StackFrame<'a> {
 
 #[automock]
 impl JvmStackFrame for StackFrame<'_> {
-    fn class_loader(&self) -> &ClassLoader {
-        self.class_loader
+    fn class_loader(&self) -> Rc<dyn ClassLoader> {
+        self.context.class_loader().clone()
     }
 
-    fn current_class(&self) -> &Klass {
-        self.current_class
+    fn heap(&self) -> Rc<JvmHeap> {
+        self.context.heap().clone()
+    }
+
+    fn current_class(&self) -> Rc<Klass> {
+        self.current_class.clone()
     }
 
     fn execute_method(
         &self,
         method: Rc<MethodInfo>,
-        klass: &Klass,
+        klass: Rc<Klass>,
     ) -> Result<JvmValue, JvmException> {
         let next_frame = StackFrame {
             previous: Some(self),
-            class_loader: self.class_loader,
-            current_class: klass,
+            context: self.context.clone(),
+            current_class: klass.clone(),
             current_method: Some(method.clone()),
         };
 
         if method.is_native() {
-            let native_fn = method.native_method().ok_or(JvmException::new())?;
-            return native_fn(NativeMethodArgs::new(klass, self.class_loader));
+            let native_fn = method
+                .native_method()
+                .ok_or(JvmException::from_string(format!(
+                    "Native method is not linked for: {}",
+                    method.name_desc()
+                )))?;
+            return native_fn(NativeMethodArgs::new(&klass, &self.context));
         }
 
         match method.code_info() {

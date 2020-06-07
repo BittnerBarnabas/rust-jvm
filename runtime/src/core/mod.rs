@@ -1,5 +1,6 @@
 pub mod class_loader;
 pub mod class_parser;
+pub mod context;
 pub mod heap;
 pub mod interpreter;
 pub mod jvm_exception;

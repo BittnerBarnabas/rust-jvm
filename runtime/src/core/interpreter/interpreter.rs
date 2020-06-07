@@ -255,10 +255,10 @@ pub fn interpret(
 
                     let klass = current_frame
                         .class_loader()
-                        .find_or_load_class(qualified_klass_name)?;
+                        .load_class(qualified_klass_name)?;
                     let new_obj = Oop::build_default_object(klass);
 
-                    let obj_ref = current_frame.class_loader().get_heap().store(new_obj)?;
+                    let obj_ref = current_frame.heap().store(new_obj)?;
 
                     eval_stack.push(obj_ref);
                 }

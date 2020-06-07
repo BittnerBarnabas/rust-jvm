@@ -3,7 +3,9 @@ use std::rc::Rc;
 use crate::core::klass::attribute::AttributeInfo;
 use crate::core::klass::constant_pool::{ConstantPool, Qualifier};
 use crate::core::klass::field::FieldInfo;
-use crate::core::klass::klass::ClassLoadingStatus::{Initialized, Linked, Loaded, Mentioned};
+use crate::core::klass::klass::ClassLoadingStatus::{
+    BeingInitialized, Initialized, Linked, Loaded, Mentioned,
+};
 use crate::core::klass::method::MethodInfo;
 use std::cell::{Cell, Ref, RefCell};
 use std::slice::Iter;
@@ -13,6 +15,7 @@ pub enum ClassLoadingStatus {
     Mentioned,
     Loaded,
     Linked,
+    BeingInitialized,
     Initialized,
 }
 
@@ -125,8 +128,12 @@ impl Klass {
         self.status.get() >= Linked
     }
 
+    pub fn is_being_initialized(&self) -> bool {
+        self.status.get() == BeingInitialized
+    }
+
     pub fn is_initialized(&self) -> bool {
-        self.status.get() >= Initialized
+        self.status.get() == Initialized
     }
 
     pub fn set_status(&self, status: ClassLoadingStatus) {

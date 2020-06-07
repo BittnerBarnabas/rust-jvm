@@ -1,4 +1,5 @@
 use crate::core::class_loader::ClassLoader;
+use crate::core::context::GlobalContext;
 use crate::core::jvm_exception::JvmException;
 use crate::core::jvm_value::JvmValue;
 use crate::core::klass::klass::Klass;
@@ -8,15 +9,15 @@ use utils::ResultIterator;
 
 pub struct NativeMethodArgs<'a> {
     current_class: &'a Klass,
-    class_loader: &'a ClassLoader,
+    context: &'a GlobalContext,
     java_args: Vec<JvmValue>,
 }
 
 impl<'a> NativeMethodArgs<'a> {
-    pub fn new<'b>(class: &'b Klass, class_loader: &'b ClassLoader) -> NativeMethodArgs<'b> {
+    pub fn new<'b>(class: &'b Klass, context: &'b GlobalContext) -> NativeMethodArgs<'b> {
         NativeMethodArgs {
             current_class: class,
-            class_loader,
+            context,
             java_args: Vec::new(),
         }
     }
