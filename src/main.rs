@@ -1,6 +1,6 @@
-use runtime::core::class_loader::{BootstrapClassLoader, ResourceLocator};
-use runtime::core::context::GlobalContext;
-use runtime::core::heap::heap::JvmHeap;
+use jvm::core::class_loader::{BootstrapClassLoader, ResourceLocator};
+use jvm::core::context::GlobalContext;
+use jvm::core::heap::heap::JvmHeap;
 use std::rc::Rc;
 
 fn main() {

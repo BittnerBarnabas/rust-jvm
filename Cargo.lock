@@ -162,6 +162,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8b7a7c0c47db5545ed3fef7468ee7bb5b74691498139e4b3f6a20685dc6dd8e"
 
 [[package]]
+name = "jvm"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "cesu8",
+ "cfg-if",
+ "log",
+ "mockall",
+ "utils",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -407,24 +419,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fe5bd57d1d7414c6b5ed48563a2c855d995ff777729dcd91c369ec7fea395ae"
 
 [[package]]
-name = "runtime"
-version = "0.1.0"
-dependencies = [
- "byteorder",
- "cesu8",
- "cfg-if",
- "log",
- "mockall",
- "utils",
-]
-
-[[package]]
 name = "rust-jvm"
 version = "0.1.0"
 dependencies = [
+ "jvm",
  "log",
  "log4rs",
- "runtime",
  "utils",
 ]
 
@@ -511,9 +511,9 @@ dependencies = [
 name = "tests"
 version = "0.1.0"
 dependencies = [
+ "jvm",
  "log",
  "log4rs",
- "runtime",
 ]
 
 [[package]]
