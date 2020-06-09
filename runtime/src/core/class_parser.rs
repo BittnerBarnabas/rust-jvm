@@ -252,7 +252,7 @@ impl ClassParserImpl {
                 signature_index: self.cursor.read_u16::<BigEndian>()?,
             }),
             unimplemented_attribute => {
-                eprintln!(
+                log::warn!(
                     "Unimplemented attribute: {} wrapping in custom attribute",
                     unimplemented_attribute
                 );

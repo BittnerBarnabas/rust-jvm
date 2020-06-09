@@ -9,6 +9,8 @@ edition = "2018"
 [dependencies]
 runtime = { path = "runtime"}
 utils = { path = "utils"}
+log4rs = "0.12.0"
+log = "0.4.8"
 
 [workspace]
 members = ["runtime", "utils", "tests"]

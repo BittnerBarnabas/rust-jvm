@@ -31,7 +31,7 @@ pub fn hash_code(args: NativeMethodArgs) -> Result<JvmValue, JvmException> {
 }
 
 pub fn register_natives(args: NativeMethodArgs) -> Result<JvmValue, JvmException> {
-    println!(
+    log::trace!(
         "register_natives called on class: {}",
         args.current_class.qualified_name()
     );
@@ -47,7 +47,7 @@ pub fn register_natives(args: NativeMethodArgs) -> Result<JvmValue, JvmException
 }
 
 fn set_native_method(unbound_native_method: &Rc<MethodInfo>) -> Result<(), JvmException> {
-    println!(
+    log::trace!(
         "Setting native method for: {}",
         unbound_native_method.name_desc()
     );

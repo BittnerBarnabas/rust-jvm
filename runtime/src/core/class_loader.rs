@@ -13,6 +13,7 @@ use crate::core::klass::klass::Klass;
 use crate::core::klass::method::MethodInfo;
 use crate::core::native::native_method_repo::NativeMethodRepo;
 use crate::core::stack_frame::{JvmStackFrame, StackFrame};
+use log::info;
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::io::Error;
@@ -163,6 +164,7 @@ pub struct ResourceLocator {
 
 impl ResourceLocator {
     pub fn new(root: String) -> ResourceLocator {
+        info!("ClassLoader initialized.");
         ResourceLocator {
             resource_root: root,
         }

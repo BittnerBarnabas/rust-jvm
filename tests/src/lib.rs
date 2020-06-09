@@ -75,6 +75,12 @@ mod tests {
 
     #[test]
     pub fn testBootStrapLoader() {
+        log4rs::init_file(
+            "/home/barnab/CLionProjects/rust-jvm/log4rs.yml",
+            Default::default(),
+        )
+        .unwrap();
+
         let locator = ResourceLocator::new(String::from(
             "/home/barnab/CLionProjects/rust-jvm/resources",
         ));

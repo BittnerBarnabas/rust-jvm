@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 runtime = { path = "../runtime"}
+log4rs = "0.12.0"
+log = "0.4.8"
