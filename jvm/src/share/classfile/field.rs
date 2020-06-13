@@ -1,7 +1,7 @@
-use crate::core::jvm_value::JvmValue;
-use crate::core::klass::access_flags;
-use crate::core::klass::access_flags::ACC_STATIC;
-use crate::core::klass::attribute::AttributeInfo;
+use crate::share::classfile::access_flags;
+use crate::share::classfile::access_flags::ACC_STATIC;
+use crate::share::classfile::attribute::AttributeInfo;
+use crate::share::utilities::jvm_value::JvmValue;
 use std::cell::Cell;
 
 #[derive(Clone)]
@@ -30,7 +30,7 @@ impl FieldInfo {
     }
 
     pub fn is_static(&self) -> bool {
-        access_flags::flag_matches(self.access_flags, ACC_STATIC)
+        crate::share::classfile::access_flags::flag_matches(self.access_flags, ACC_STATIC)
     }
 
     /// Will return the stored static value, it's only valid on static fields.

@@ -1,5 +1,7 @@
 pub mod access_flags;
 pub mod attribute;
+pub mod class_loader;
+pub mod class_parser;
 pub mod constant_pool;
 pub mod descriptor;
 pub mod field;

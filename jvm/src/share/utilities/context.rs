@@ -1,5 +1,5 @@
-use crate::core::class_loader::ClassLoader;
-use crate::core::heap::heap::JvmHeap;
+use crate::share::classfile::class_loader::ClassLoader;
+use crate::share::memory::heap::JvmHeap;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 

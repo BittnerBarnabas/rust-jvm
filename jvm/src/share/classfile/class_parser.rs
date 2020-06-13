@@ -4,11 +4,13 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 use utils::ResultIterator;
 
-use crate::core::klass::attribute::{AttributeInfo, ExceptionHandler, LineNumber, LocalVariable};
-use crate::core::klass::constant_pool::{ConstantPool, CpInfo};
-use crate::core::klass::field::FieldInfo;
-use crate::core::klass::klass::Klass;
-use crate::core::klass::method::MethodInfo;
+use crate::share::classfile::attribute::{
+    AttributeInfo, ExceptionHandler, LineNumber, LocalVariable,
+};
+use crate::share::classfile::constant_pool::{ConstantPool, CpInfo};
+use crate::share::classfile::field::FieldInfo;
+use crate::share::classfile::klass::Klass;
+use crate::share::classfile::method::MethodInfo;
 
 const CLASS_MAGIC_NUMBER: u32 = 0xCAFEBABE;
 

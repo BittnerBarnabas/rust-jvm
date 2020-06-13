@@ -1,13 +1,13 @@
-use crate::core::class_loader::ClassLoader;
-use crate::core::context::GlobalContext;
-use crate::core::heap::heap::JvmHeap;
-use crate::core::interpreter::interpreter;
-use crate::core::interpreter::local_variables::LocalVariableStore;
-use crate::core::jvm_exception::JvmException;
-use crate::core::jvm_value::JvmValue;
-use crate::core::klass::klass::Klass;
-use crate::core::klass::method::MethodInfo;
-use crate::core::native::native_methods::NativeMethodArgs;
+use crate::share::classfile::class_loader::ClassLoader;
+use crate::share::classfile::klass::Klass;
+use crate::share::classfile::method::MethodInfo;
+use crate::share::interpreter::interpreter;
+use crate::share::interpreter::local_variables::LocalVariableStore;
+use crate::share::memory::heap::JvmHeap;
+use crate::share::native::native_methods::NativeMethodArgs;
+use crate::share::utilities::context::GlobalContext;
+use crate::share::utilities::jvm_exception::JvmException;
+use crate::share::utilities::jvm_value::JvmValue;
 use mockall::*;
 use std::rc::Rc;
 
@@ -80,8 +80,11 @@ impl JvmStackFrame for StackFrame<'_> {
             Some(code_info) => {
                 let mut local_variables: LocalVariableStore =
                     LocalVariableStore::new(code_info.local_variables() as usize);
-                let result =
-                    interpreter::interpret(&next_frame, code_info.bytes(), &mut local_variables);
+                let result = crate::share::interpreter::interpreter::interpret(
+                    &next_frame,
+                    code_info.bytes(),
+                    &mut local_variables,
+                );
                 return result;
             }
             _ => Err(JvmException::new()),

@@ -1,5 +1,5 @@
-use crate::core::interpreter::evaluation_stack::MockEvaluationStack as EvaluationStack;
-use crate::core::jvm_value::JvmValue;
+use crate::share::interpreter::evaluation_stack::MockEvaluationStack as EvaluationStack;
+use crate::share::utilities::jvm_value::JvmValue;
 
 #[test]
 pub fn myTest() {

@@ -1,9 +1,9 @@
-use crate::core::jvm_exception::JvmException;
-use crate::core::jvm_value::JvmValue;
-use crate::core::klass::access_flags;
-use crate::core::klass::access_flags::ACC_NATIVE;
-use crate::core::klass::attribute::AttributeInfo;
-use crate::core::native::native_methods::NativeMethod;
+use crate::share::classfile::access_flags;
+use crate::share::classfile::access_flags::ACC_NATIVE;
+use crate::share::classfile::attribute::AttributeInfo;
+use crate::share::native::native_methods::NativeMethod;
+use crate::share::utilities::jvm_exception::JvmException;
+use crate::share::utilities::jvm_value::JvmValue;
 use std::cell::Cell;
 use std::io::Error;
 
@@ -86,7 +86,7 @@ impl MethodInfo {
     }
 
     pub fn is_native(&self) -> bool {
-        access_flags::flag_matches(self.access_flags, ACC_NATIVE)
+        crate::share::classfile::access_flags::flag_matches(self.access_flags, ACC_NATIVE)
     }
 
     pub fn set_native_method(&self, method: NativeMethod) {

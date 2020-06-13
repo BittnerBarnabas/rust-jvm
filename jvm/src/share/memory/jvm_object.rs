@@ -1,5 +1,5 @@
-use crate::core::jvm_value::JvmValue;
-use crate::core::klass::klass::Klass;
+use crate::share::classfile::klass::Klass;
+use crate::share::utilities::jvm_value::JvmValue;
 use std::rc::Rc;
 
 pub enum Oop {

@@ -1,9 +1,8 @@
-use crate::core::class_loader::ClassLoader;
-use crate::core::context::GlobalContext;
-use crate::core::jvm_exception::JvmException;
-use crate::core::jvm_value::JvmValue;
-use crate::core::klass::klass::Klass;
-use crate::core::klass::method::MethodInfo;
+use crate::share::classfile::klass::Klass;
+use crate::share::classfile::method::MethodInfo;
+use crate::share::utilities::context::GlobalContext;
+use crate::share::utilities::jvm_exception::JvmException;
+use crate::share::utilities::jvm_value::JvmValue;
 use std::rc::Rc;
 use utils::ResultIterator;
 

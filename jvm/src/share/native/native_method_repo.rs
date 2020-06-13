@@ -1,5 +1,5 @@
-use crate::core::klass::method::MethodInfo;
-use crate::core::native::native_methods::NativeMethod;
+use crate::share::classfile::method::MethodInfo;
+use crate::share::native::native_methods::NativeMethod;
 use std::collections::HashMap;
 use std::iter::Map;
 use std::rc::Rc;
@@ -13,11 +13,11 @@ impl NativeMethodRepo {
         let mut store: HashMap<String, NativeMethod> = HashMap::new();
         store.insert(
             String::from("registerNatives()V"),
-            crate::core::native::native_methods::register_natives,
+            crate::share::native::native_methods::register_natives,
         );
         store.insert(
             String::from("hashCode()I"),
-            crate::core::native::native_methods::hash_code,
+            crate::share::native::native_methods::hash_code,
         );
 
         NativeMethodRepo { store }

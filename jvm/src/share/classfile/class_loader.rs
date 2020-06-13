@@ -1,18 +1,16 @@
 use std::collections::HashMap;
 
-use crate::core::class_parser::ClassParser;
-use crate::core::context::GlobalContext;
-use crate::core::heap::heap::JvmHeap;
-use crate::core::jvm_exception::JvmException;
-use crate::core::jvm_value::JvmValue;
-use crate::core::klass::constant_pool::Qualifier;
-use crate::core::klass::klass::ClassLoadingStatus::{
+use crate::share::classfile::class_parser::ClassParser;
+use crate::share::classfile::constant_pool::Qualifier;
+use crate::share::classfile::klass::ClassLoadingStatus::{
     BeingInitialized, Initialized, Linked, Loaded,
 };
-use crate::core::klass::klass::Klass;
-use crate::core::klass::method::MethodInfo;
-use crate::core::native::native_method_repo::NativeMethodRepo;
-use crate::core::stack_frame::{JvmStackFrame, StackFrame};
+use crate::share::classfile::klass::Klass;
+use crate::share::classfile::method::MethodInfo;
+use crate::share::runtime::stack_frame::{JvmStackFrame, StackFrame};
+use crate::share::utilities::context::GlobalContext;
+use crate::share::utilities::jvm_exception::JvmException;
+use crate::share::utilities::jvm_value::JvmValue;
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::io::Error;

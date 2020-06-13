@@ -1,11 +1,11 @@
-use crate::core::heap::jvm_object::Oop;
-use crate::core::interpreter::evaluation_stack::EvaluationStack;
-use crate::core::interpreter::local_variables::JvmLocalVariableStore;
-use crate::core::jvm_exception::JvmException;
-use crate::core::jvm_value::JvmValue;
-use crate::core::klass::constant_pool::Qualifier;
-use crate::core::opcode;
-use crate::core::stack_frame::JvmStackFrame;
+use crate::share::classfile::constant_pool::Qualifier;
+use crate::share::interpreter::evaluation_stack::EvaluationStack;
+use crate::share::interpreter::local_variables::JvmLocalVariableStore;
+use crate::share::interpreter::opcode;
+use crate::share::memory::jvm_object::Oop;
+use crate::share::runtime::stack_frame::JvmStackFrame;
+use crate::share::utilities::jvm_exception::JvmException;
+use crate::share::utilities::jvm_value::JvmValue;
 
 #[cfg(test)]
 #[path = "./interpreter_test.rs"]

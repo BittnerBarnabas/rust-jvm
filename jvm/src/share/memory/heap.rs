@@ -1,6 +1,6 @@
-use crate::core::heap::jvm_object::Oop;
-use crate::core::jvm_exception::JvmException;
-use crate::core::jvm_value::JvmValue;
+use crate::share::memory::jvm_object::Oop;
+use crate::share::utilities::jvm_exception::JvmException;
+use crate::share::utilities::jvm_value::JvmValue;
 use std::cell::{Cell, RefCell};
 
 pub struct JvmHeap {

@@ -1,4 +1,4 @@
-use crate::core::jvm_value::JvmValue;
+use crate::share::utilities::jvm_value::JvmValue;
 use mockall::*;
 
 #[cfg(test)]

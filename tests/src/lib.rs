@@ -1,14 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use jvm::core::class_loader::{BootstrapClassLoader, ClassLoader, ResourceLocator};
-    use jvm::core::context::GlobalContext;
-    use jvm::core::heap::heap::JvmHeap;
-    use jvm::core::jvm_exception::JvmException;
-    use jvm::core::jvm_value::JvmValue;
-    use jvm::core::klass::constant_pool::Qualifier;
-    use jvm::core::klass::klass::Klass;
-    use jvm::core::native::native_method_repo::NativeMethodRepo;
-    use jvm::core::stack_frame::{JvmStackFrame, StackFrame};
+    use jvm::share::classfile::class_loader::{BootstrapClassLoader, ClassLoader, ResourceLocator};
+    use jvm::share::classfile::constant_pool::Qualifier;
+    use jvm::share::classfile::klass::Klass;
+    use jvm::share::memory::heap::JvmHeap;
+    use jvm::share::utilities::context::GlobalContext;
     use std::rc::Rc;
 
     // use runtime::core::class_loader::ClassLoader;

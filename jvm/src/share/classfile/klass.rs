@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
-use crate::core::klass::attribute::AttributeInfo;
-use crate::core::klass::constant_pool::{ConstantPool, Qualifier};
-use crate::core::klass::field::FieldInfo;
-use crate::core::klass::klass::ClassLoadingStatus::{
+use crate::share::classfile::attribute::AttributeInfo;
+use crate::share::classfile::constant_pool::{ConstantPool, Qualifier};
+use crate::share::classfile::field::FieldInfo;
+use crate::share::classfile::klass::ClassLoadingStatus::{
     BeingInitialized, Initialized, Linked, Loaded, Mentioned,
 };
-use crate::core::klass::method::MethodInfo;
+use crate::share::classfile::method::MethodInfo;
 use std::cell::{Cell, Ref, RefCell};
 use std::slice::Iter;
 
@@ -164,7 +164,7 @@ impl Klass {
     pub fn register_natives(&self) {
         self.get_method_by_name_desc("registerNatives()V".to_string())
             .map(|method| {
-                method.set_native_method(crate::core::native::native_methods::register_natives)
+                method.set_native_method(crate::share::native::native_methods::register_natives)
             });
     }
 

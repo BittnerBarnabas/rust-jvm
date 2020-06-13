@@ -1,14 +1,12 @@
 use mockall::predicate::*;
 use mockall::*;
 
-use crate::core::interpreter::interpreter::interpret;
-use crate::core::interpreter::local_variables::MockLocalVariableStore as LocalVariableStore;
-// use crate::core::stack_frame::StackFrame;
-use crate::core::jvm_exception::JvmException;
-use crate::core::jvm_value::JvmValue;
-// use crate::core::interpreter::local_variables::LocalVariableStore;
-use crate::core::opcode;
-use crate::core::stack_frame::MockStackFrame as StackFrame;
+use crate::share::interpreter::interpreter::interpret;
+use crate::share::interpreter::local_variables::MockLocalVariableStore as LocalVariableStore;
+use crate::share::interpreter::opcode;
+use crate::share::runtime::stack_frame::MockStackFrame as StackFrame;
+use crate::share::utilities::jvm_exception::JvmException;
+use crate::share::utilities::jvm_value::JvmValue;
 
 fn run_interpreter_only(code: Vec<u8>) -> Result<JvmValue, JvmException> {
     let mut store = LocalVariableStore::default();
