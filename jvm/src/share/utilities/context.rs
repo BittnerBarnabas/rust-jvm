@@ -10,6 +10,7 @@ pub struct GlobalContext {
 
 impl GlobalContext {
     pub fn new(heap: Arc<JvmHeap>) -> GlobalContext {
+        log::trace!("Initializing GlobalContext");
         GlobalContext {
             heap,
             class_loader: Arc::new(RwLock::new(None)),

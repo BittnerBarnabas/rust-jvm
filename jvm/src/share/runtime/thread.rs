@@ -14,8 +14,10 @@ impl MainJavaThread {
     }
 
     pub fn start(&self) -> JoinHandle<()> {
+        log::trace!("Starting MainJavaThread");
         let context = self.context.clone();
         thread::spawn(move || {
+            log::trace!("Bootstrapping classes");
             context.class_loader().bootstrap();
         })
     }
