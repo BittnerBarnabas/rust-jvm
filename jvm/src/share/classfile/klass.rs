@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::share::classfile::attribute::AttributeInfo;
 use crate::share::classfile::constant_pool::{ConstantPool, Qualifier};
 use crate::share::classfile::field::FieldInfo;
@@ -7,8 +5,10 @@ use crate::share::classfile::klass::ClassLoadingStatus::{
     BeingInitialized, Initialized, Linked, Loaded, Mentioned,
 };
 use crate::share::classfile::method::MethodInfo;
+use std::borrow::{Borrow, BorrowMut};
 use std::cell::{Cell, Ref, RefCell};
 use std::slice::Iter;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub enum ClassLoadingStatus {
@@ -26,13 +26,13 @@ pub struct Klass {
     access_flags: u16,
     this_class: String,
     super_class_name: Option<String>,
-    super_class: RefCell<Option<Rc<Klass>>>,
+    super_class: Mutex<Option<Arc<Klass>>>,
     interfaces: Vec<String>,
-    instance_fields: Vec<Rc<FieldInfo>>,
-    static_fields: Vec<Rc<FieldInfo>>,
-    methods: Vec<Rc<MethodInfo>>,
+    instance_fields: Vec<Arc<FieldInfo>>,
+    static_fields: Vec<Arc<FieldInfo>>,
+    methods: Vec<Arc<MethodInfo>>,
     attributes: Vec<AttributeInfo>,
-    status: Cell<ClassLoadingStatus>,
+    status: Mutex<ClassLoadingStatus>,
 }
 
 impl Klass {
@@ -44,21 +44,22 @@ impl Klass {
         this_class: String,
         super_class_name: Option<String>,
         interfaces: Vec<String>,
-        fields: Vec<FieldInfo>,
-        methods: Vec<MethodInfo>,
+        mut fields: Vec<FieldInfo>,
+        mut methods: Vec<MethodInfo>,
         attributes: Vec<AttributeInfo>,
     ) -> Klass {
-        let methods: Vec<Rc<MethodInfo>> = methods.iter().map(|m| Rc::new(m.clone())).collect();
-        let instance_fields: Vec<Rc<FieldInfo>> = fields
-            .iter()
-            .filter(|field| !field.is_static())
-            .map(|f| Rc::new(f.clone()))
-            .collect();
-        let static_fields: Vec<Rc<FieldInfo>> = fields
-            .iter()
-            .filter(|field| field.is_static())
-            .map(|f| Rc::new(f.clone()))
-            .collect();
+        let methods: Vec<Arc<MethodInfo>> = methods.drain(0..).map(|m| Arc::new(m)).collect();
+
+        let mut instance_fields: Vec<Arc<FieldInfo>> = Vec::new();
+        let mut static_fields: Vec<Arc<FieldInfo>> = Vec::new();
+        fields.drain(0..).for_each(|elem| {
+            if elem.is_static() {
+                static_fields.push(Arc::new(elem))
+            } else {
+                instance_fields.push(Arc::new(elem))
+            }
+        });
+
         Klass {
             minor_version,
             major_version,
@@ -66,13 +67,13 @@ impl Klass {
             access_flags,
             this_class,
             super_class_name,
-            super_class: RefCell::new(None),
+            super_class: Mutex::new(None),
             interfaces,
             instance_fields,
             static_fields,
             methods,
             attributes,
-            status: Cell::new(Mentioned),
+            status: Mutex::new(Mentioned),
         }
     }
 
@@ -84,19 +85,19 @@ impl Klass {
         self.super_class_name.clone()
     }
 
-    pub fn super_class(&self) -> Ref<Option<Rc<Klass>>> {
-        self.super_class.borrow()
-    }
+    // pub fn super_class(&self) -> Ref<Option<Arc<Klass>>> {
+    //     self.super_class.borrow()
+    // }
 
-    pub fn set_super_class(&self, super_class: Rc<Klass>) {
-        self.super_class.borrow_mut().replace(super_class);
+    pub fn set_super_class(&self, super_class: Arc<Klass>) {
+        self.super_class.lock().unwrap().replace(super_class);
     }
 
     pub fn interfaces(&self) -> Vec<String> {
         self.interfaces.iter().cloned().collect()
     }
 
-    pub fn instance_fields(&self) -> &Vec<Rc<FieldInfo>> {
+    pub fn instance_fields(&self) -> &Vec<Arc<FieldInfo>> {
         &self.instance_fields
     }
 
@@ -117,33 +118,33 @@ impl Klass {
     }
 
     pub fn is_mentioned(&self) -> bool {
-        self.status.get() >= Mentioned
+        *self.status.lock().unwrap() >= Mentioned
     }
 
     pub fn is_loaded(&self) -> bool {
-        self.status.get() >= Loaded
+        *self.status.lock().unwrap() >= Loaded
     }
 
     pub fn is_linked(&self) -> bool {
-        self.status.get() >= Linked
+        *self.status.lock().unwrap() >= Linked
     }
 
     pub fn is_being_initialized(&self) -> bool {
-        self.status.get() == BeingInitialized
+        *self.status.lock().unwrap() == BeingInitialized
     }
 
     pub fn is_initialized(&self) -> bool {
-        self.status.get() == Initialized
+        *self.status.lock().unwrap() == Initialized
     }
 
     pub fn set_status(&self, status: ClassLoadingStatus) {
-        self.status.replace(status);
+        *self.status.lock().unwrap() = status;
     }
 
     pub fn get_method_by_qualified_name(
         &self,
         qualified_name: Qualifier,
-    ) -> Option<Rc<MethodInfo>> {
+    ) -> Option<Arc<MethodInfo>> {
         return match qualified_name {
             Qualifier::MethodRef {
                 class_name: _,
@@ -154,11 +155,11 @@ impl Klass {
         };
     }
 
-    pub fn get_method_by_name_desc(&self, name_desc: String) -> Option<Rc<MethodInfo>> {
+    pub fn get_method_by_name_desc(&self, name_desc: String) -> Option<Arc<MethodInfo>> {
         self.methods
             .iter()
             .find(|method| name_desc == method.name_desc())
-            .map(|method| Rc::clone(method))
+            .map(|method| Arc::clone(method))
     }
 
     pub fn register_natives(&self) {
@@ -168,7 +169,7 @@ impl Klass {
             });
     }
 
-    pub fn methods(&self) -> &Vec<Rc<MethodInfo>> {
+    pub fn methods(&self) -> &Vec<Arc<MethodInfo>> {
         &self.methods
     }
 }

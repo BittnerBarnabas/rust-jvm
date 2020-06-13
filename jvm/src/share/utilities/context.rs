@@ -1,31 +1,31 @@
 use crate::share::classfile::class_loader::ClassLoader;
 use crate::share::memory::heap::JvmHeap;
 use std::cell::{Cell, RefCell};
-use std::rc::Rc;
+use std::sync::{Arc, Mutex, Once, RwLock};
 
 pub struct GlobalContext {
-    heap: Rc<JvmHeap>,
-    class_loader: RefCell<Option<Rc<dyn ClassLoader>>>,
+    heap: Arc<JvmHeap>,
+    class_loader: Arc<RwLock<Option<Arc<dyn ClassLoader>>>>,
 }
 
 impl GlobalContext {
-    pub fn new(heap: Rc<JvmHeap>) -> GlobalContext {
+    pub fn new(heap: Arc<JvmHeap>) -> GlobalContext {
         GlobalContext {
             heap,
-            class_loader: RefCell::new(None),
+            class_loader: Arc::new(RwLock::new(None)),
         }
     }
 
-    pub fn heap(&self) -> Rc<JvmHeap> {
+    pub fn heap(&self) -> Arc<JvmHeap> {
         self.heap.clone()
     }
 
-    pub fn set_class_loader(&self, class_loader: Rc<dyn ClassLoader>) {
-        self.class_loader.borrow_mut().replace(class_loader);
+    pub fn set_class_loader(&self, class_loader: Arc<dyn ClassLoader>) {
+        self.class_loader.write().unwrap().replace(class_loader);
     }
 
-    pub fn class_loader(&self) -> Rc<dyn ClassLoader> {
-        let inner = self.class_loader.borrow().clone();
+    pub fn class_loader(&self) -> Arc<dyn ClassLoader> {
+        let inner = self.class_loader.read().unwrap().clone();
         assert!(
             inner.is_some(),
             "class_loader should be set before accessing it!"

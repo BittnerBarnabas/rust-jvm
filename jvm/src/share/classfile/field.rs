@@ -3,14 +3,15 @@ use crate::share::classfile::access_flags::ACC_STATIC;
 use crate::share::classfile::attribute::AttributeInfo;
 use crate::share::utilities::jvm_value::JvmValue;
 use std::cell::Cell;
+use std::sync::Mutex;
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct FieldInfo {
     access_flags: u16,
     name: String,
     descriptor: String,
     attributes: Vec<AttributeInfo>,
-    static_value: Cell<Option<JvmValue>>,
+    static_value: Mutex<Option<JvmValue>>,
 }
 
 impl FieldInfo {
@@ -25,7 +26,7 @@ impl FieldInfo {
             name,
             descriptor,
             attributes,
-            static_value: Cell::new(None),
+            static_value: Mutex::new(None),
         }
     }
 
@@ -37,12 +38,16 @@ impl FieldInfo {
     /// Should check before, using `FieldInfo::is_static`
     pub fn static_value(&self) -> JvmValue {
         assert!(self.is_static());
-        self.static_value.get().expect("Should not happen.").clone()
+        self.static_value
+            .lock()
+            .unwrap()
+            .expect("Should not happen.")
+            .clone()
     }
 
     pub fn set_static_value(&self, value: JvmValue) {
         assert!(self.is_static());
-        self.static_value.set(Some(value))
+        *self.static_value.lock().unwrap() = Some(value)
     }
 
     pub fn default(&self) -> JvmValue {

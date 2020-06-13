@@ -9,28 +9,28 @@ use crate::share::utilities::context::GlobalContext;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 use mockall::*;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub trait JvmStackFrame {
-    fn class_loader(&self) -> Rc<dyn ClassLoader>;
-    fn heap(&self) -> Rc<JvmHeap>;
-    fn current_class(&self) -> Rc<Klass>;
+    fn class_loader(&self) -> Arc<dyn ClassLoader>;
+    fn heap(&self) -> Arc<JvmHeap>;
+    fn current_class(&self) -> Arc<Klass>;
     fn execute_method(
         &self,
-        method: Rc<MethodInfo>,
-        klass: Rc<Klass>,
+        method: Arc<MethodInfo>,
+        klass: Arc<Klass>,
     ) -> Result<JvmValue, JvmException>;
 }
 
 pub struct StackFrame<'a> {
     previous: Option<&'a StackFrame<'a>>,
     context: &'a GlobalContext,
-    current_class: Rc<Klass>,
-    current_method: Option<Rc<MethodInfo>>,
+    current_class: Arc<Klass>,
+    current_method: Option<Arc<MethodInfo>>,
 }
 
 impl<'a> StackFrame<'a> {
-    pub fn new(context: &'a GlobalContext, current_class: Rc<Klass>) -> StackFrame<'a> {
+    pub fn new(context: &'a GlobalContext, current_class: Arc<Klass>) -> StackFrame<'a> {
         StackFrame {
             previous: None,
             context,
@@ -42,22 +42,22 @@ impl<'a> StackFrame<'a> {
 
 #[automock]
 impl JvmStackFrame for StackFrame<'_> {
-    fn class_loader(&self) -> Rc<dyn ClassLoader> {
+    fn class_loader(&self) -> Arc<dyn ClassLoader> {
         self.context.class_loader().clone()
     }
 
-    fn heap(&self) -> Rc<JvmHeap> {
+    fn heap(&self) -> Arc<JvmHeap> {
         self.context.heap().clone()
     }
 
-    fn current_class(&self) -> Rc<Klass> {
+    fn current_class(&self) -> Arc<Klass> {
         self.current_class.clone()
     }
 
     fn execute_method(
         &self,
-        method: Rc<MethodInfo>,
-        klass: Rc<Klass>,
+        method: Arc<MethodInfo>,
+        klass: Arc<Klass>,
     ) -> Result<JvmValue, JvmException> {
         let next_frame = StackFrame {
             previous: Some(self),

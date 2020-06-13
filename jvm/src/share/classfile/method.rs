@@ -6,19 +6,19 @@ use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 use std::cell::Cell;
 use std::io::Error;
+use std::sync::Mutex;
 
 pub struct MethodReference {
     pub class_name: String,
     pub method_name: String,
 }
 
-#[derive(Clone)]
 pub struct MethodInfo {
     access_flags: u16,
     name: String,
     descriptor: String,
     attributes: Vec<AttributeInfo>,
-    native_method: Cell<Option<NativeMethod>>,
+    native_method: Mutex<Option<NativeMethod>>,
     code: Option<CodeInfo>,
 }
 
@@ -58,7 +58,7 @@ impl MethodInfo {
             name,
             descriptor,
             attributes,
-            native_method: Cell::new(None),
+            native_method: Mutex::new(None),
             code,
         })
     }
@@ -90,10 +90,10 @@ impl MethodInfo {
     }
 
     pub fn set_native_method(&self, method: NativeMethod) {
-        self.native_method.set(Some(method))
+        *self.native_method.lock().unwrap() = Some(method)
     }
 
     pub fn native_method(&self) -> Option<NativeMethod> {
-        self.native_method.get()
+        *self.native_method.lock().unwrap()
     }
 }

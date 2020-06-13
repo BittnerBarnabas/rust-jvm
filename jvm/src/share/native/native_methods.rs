@@ -3,7 +3,7 @@ use crate::share::classfile::method::MethodInfo;
 use crate::share::utilities::context::GlobalContext;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
-use std::rc::Rc;
+use std::sync::Arc;
 use utils::ResultIterator;
 
 pub struct NativeMethodArgs<'a> {
@@ -45,7 +45,7 @@ pub fn register_natives(args: NativeMethodArgs) -> Result<JvmValue, JvmException
     Ok(JvmValue::Void {})
 }
 
-fn set_native_method(unbound_native_method: &Rc<MethodInfo>) -> Result<(), JvmException> {
+fn set_native_method(unbound_native_method: &Arc<MethodInfo>) -> Result<(), JvmException> {
     log::trace!(
         "Setting native method for: {}",
         unbound_native_method.name_desc()
