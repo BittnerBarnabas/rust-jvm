@@ -9,6 +9,7 @@ use crate::share::classfile::klass::Klass;
 use crate::share::classfile::method::MethodInfo;
 use crate::share::runtime::stack_frame::{JvmStackFrame, StackFrame};
 use crate::share::utilities::context::GlobalContext;
+use crate::share::utilities::global_symbols::java_lang_Object;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 use std::borrow::BorrowMut;
@@ -27,9 +28,9 @@ pub trait ClassLoader: Send + Sync {
         qualified_name: Qualifier,
     ) -> Result<Arc<MethodInfo>, JvmException>;
 
-    fn load_class(&self, qualified_name: String) -> Result<Arc<Klass>, JvmException>;
+    fn load_class(&self, qualified_name: &String) -> Result<Arc<Klass>, JvmException>;
 
-    fn load_and_init_class(&self, qualified_name: String) -> Result<Arc<Klass>, JvmException>;
+    fn load_and_init_class(&self, qualified_name: &String) -> Result<Arc<Klass>, JvmException>;
 
     fn bootstrap(&self) -> Result<(), JvmException>;
 }
@@ -81,10 +82,10 @@ impl ClassLoader for BootstrapClassLoader {
                 name: _,
                 descriptor: _,
             } => {
-                let klass = self.load_class(class_name.clone())?;
+                let klass = self.load_class(class_name)?;
 
                 if !klass.is_being_initialized() && !klass.is_initialized() {
-                    self.load_and_init_class(class_name.clone())?;
+                    self.load_and_init_class(class_name)?;
                 }
                 assert!(klass.is_initialized() || klass.is_being_initialized());
 
@@ -96,11 +97,11 @@ impl ClassLoader for BootstrapClassLoader {
         }
     }
 
-    fn load_class(&self, qualified_name: String) -> Result<Arc<Klass>, JvmException> {
+    fn load_class(&self, qualified_name: &String) -> Result<Arc<Klass>, JvmException> {
         self.load_class(qualified_name)
     }
 
-    fn load_and_init_class(&self, qualified_name: String) -> Result<Arc<Klass>, JvmException> {
+    fn load_and_init_class(&self, qualified_name: &String) -> Result<Arc<Klass>, JvmException> {
         let class = self.load_class(qualified_name)?;
         self.link_class(class.clone())?;
         self.initialize_class(class.clone())?;
@@ -108,7 +109,7 @@ impl ClassLoader for BootstrapClassLoader {
     }
 
     fn bootstrap(&self) -> Result<(), JvmException> {
-        self.load_and_init_class(String::from("java/lang/Object"))?;
+        self.load_and_init_class(&*java_lang_Object)?;
 
         Ok(())
     }
@@ -130,7 +131,7 @@ impl BootstrapClassLoader {
     /// or the parsing fails.
     ///
     /// 5.3.1 Section of JVM Specification
-    pub fn load_class(&self, class_name: String) -> Result<Arc<Klass>, JvmException> {
+    pub fn load_class(&self, class_name: &String) -> Result<Arc<Klass>, JvmException> {
         let class_lookup = self
             .lookup_table
             .lock()
@@ -140,12 +141,12 @@ impl BootstrapClassLoader {
         match class_lookup {
             Some(class) => {
                 if !class.is_loaded() {
-                    self.do_load(&class_name)
+                    self.do_load(class_name)
                 } else {
                     Ok(class.clone())
                 }
             }
-            None => self.do_load(&class_name),
+            None => self.do_load(class_name),
         }
     }
 
@@ -180,7 +181,7 @@ impl BootstrapClassLoader {
         //we've got the class, now need to check its superclass
         match klass.qualified_super_name() {
             Some(super_name) => {
-                self.load_class(super_name)?;
+                self.load_class(&super_name)?;
                 //TODO: 5.4.3.1 steps are missing to load Reference Type for array classes
                 //as well as applying access control to this class and its superclass
 
@@ -190,8 +191,9 @@ impl BootstrapClassLoader {
             None => {
                 assert_eq!(
                     klass.qualified_name(),
-                    String::from("java/lang/Object"),
-                    "Only java/lang/Object permitted to not have a super class, but class {} doesn't have any!",
+                    *java_lang_Object,
+                    "Only {} permitted to not have a super class, but class {} doesn't have any!",
+                    *java_lang_Object,
                     klass.qualified_name()
                 );
             }
@@ -201,7 +203,7 @@ impl BootstrapClassLoader {
         let _loaded_interfaces = klass
             .interfaces()
             .iter()
-            .map(|interface| self.load_class(interface.clone()))
+            .map(|interface| self.load_class(interface))
             .collect_to_result()?;
 
         //TODO add extra checks over resolved interfaces: IncompatibleClassChangeError, and ClassCircularityError

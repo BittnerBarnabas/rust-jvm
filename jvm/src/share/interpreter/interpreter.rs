@@ -255,7 +255,7 @@ pub fn interpret(
 
                     let klass = current_frame
                         .class_loader()
-                        .load_class(qualified_klass_name)?;
+                        .load_class(&qualified_klass_name)?;
                     let new_obj = Oop::build_default_object(klass);
 
                     let obj_ref = current_frame.heap().store(new_obj)?;

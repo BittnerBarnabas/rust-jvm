@@ -168,6 +168,7 @@ dependencies = [
  "byteorder",
  "cesu8",
  "cfg-if",
+ "lazy_static",
  "log",
  "mockall",
  "utils",
