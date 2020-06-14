@@ -51,10 +51,20 @@ impl ConstantPool {
 
     pub fn create(cursor: &mut Cursor<Vec<u8>>, count: usize) -> Result<ConstantPool, Error> {
         let mut constant_pool: Vec<CpInfo> = Vec::new();
-        for _i in 1..count {
+        let mut i = 1;
+        while i < count {
             let cp_info = CpInfo::create(cursor)?;
+            match cp_info {
+                CpInfo::Long { .. } => {
+                    //need this bespoke logic for Longs as they occupy 2 places in CP.
+                    constant_pool.push(cp_info.clone());
+                    i += 2;
+                }
+                _ => i += 1,
+            }
             constant_pool.push(cp_info);
         }
+        for _i in 1..count {}
         Ok(ConstantPool::from(constant_pool))
     }
 
@@ -207,7 +217,7 @@ impl CpInfo {
                 class_index: cursor.read_u16::<BigEndian>()?,
                 name_and_type_index: cursor.read_u16::<BigEndian>()?,
             }),
-            CONSTANT_METHODREF => Ok(CpInfo::MethodRef {
+            CONSTANT_METHODREF | CONSTANT_INTERFACE_METHODREF => Ok(CpInfo::MethodRef {
                 class_index: cursor.read_u16::<BigEndian>()?,
                 name_and_type_index: cursor.read_u16::<BigEndian>()?,
             }),
