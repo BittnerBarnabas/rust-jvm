@@ -5,7 +5,8 @@ use byteorder::{BigEndian, ReadBytesExt};
 use utils::ResultIterator;
 
 use crate::share::classfile::attribute::{
-    AttributeInfo, ExceptionHandler, LineNumber, LocalVariable, StackMapFrame, VerificationTypeInfo,
+    AttributeInfo, ExceptionHandler, InnerClass, LineNumber, LocalVariable, StackMapFrame,
+    VerificationTypeInfo,
 };
 use crate::share::classfile::constant_pool::{ConstantPool, CpInfo};
 use crate::share::classfile::field::FieldInfo;
@@ -184,18 +185,22 @@ impl ClassParserImpl {
             "ConstantValue" => Ok(AttributeInfo::ConstantValue {
                 constant_value_index: self.cursor.read_u16::<BigEndian>()?,
             }),
-            "Code" => self.parse_code()
-            "LineNumberTable" => self.parse_line_number_table()
-            "LocalVariableTable" => self.parse_local_variable_table()
+            "Code" => self.parse_code(),
+            "LineNumberTable" => self.parse_line_number_table(),
+            "LocalVariableTable" => self.parse_local_variable_table(),
             "SourceFile" => Ok(AttributeInfo::SourceFile {
                 sourcefile_index: self.cursor.read_u16::<BigEndian>()?,
             }),
             "Signature" => Ok(AttributeInfo::Signature {
                 signature_index: self.cursor.read_u16::<BigEndian>()?,
             }),
-            "StackMapTable" => self.parse_stack_map_table()
-            "Exceptions" => self.parse_exceptions()
-            unimplemented_attribute => self.parse_cusom_attribute(name_index, attribute_length)
+            "StackMapTable" => self.parse_stack_map_table(),
+            "Exceptions" => self.parse_exceptions(),
+            "InnerClasses" => self.parse_inner_classes(),
+            "Deprecated" => Ok(AttributeInfo::Deprecated {}),
+            unimplemented_attribute => {
+                self.parse_cusom_attribute(name_index, attribute_length, unimplemented_attribute)
+            }
         };
     }
 
@@ -336,11 +341,32 @@ impl ClassParserImpl {
         })
     }
 
-    fn parse_cusom_attribute(&mut self, name_index: u16, attribute_length: u32) -> Result<AttributeInfo, Error> {
+    fn parse_inner_classes(&mut self) -> Result<AttributeInfo, Error> {
+        let number_of_classes = self.cursor.read_u16::<BigEndian>()?;
+        let mut classes: Vec<InnerClass> = Vec::new();
+        for i in 0..number_of_classes {
+            let inner_class = InnerClass {
+                inner_class_info_index: self.cursor.read_u16::<BigEndian>()?,
+                outer_class_info_index: self.cursor.read_u16::<BigEndian>()?,
+                inner_name_index: self.cursor.read_u16::<BigEndian>()?,
+                inner_class_access_flags: self.cursor.read_u16::<BigEndian>()?,
+            };
+
+            classes.push(inner_class);
+        }
+        Ok(AttributeInfo::InnerClasses { classes })
+    }
+
+    fn parse_cusom_attribute(
+        &mut self,
+        name_index: u16,
+        attribute_length: u32,
+        unimplemented_attribute: &str,
+    ) -> Result<AttributeInfo, Error> {
         log::warn!(
-                    "Unimplemented attribute: {} wrapping in custom attribute",
-                    unimplemented_attribute
-                );
+            "Unimplemented attribute: {} wrapping in custom attribute",
+            unimplemented_attribute
+        );
 
         let info = (0..attribute_length)
             .map(|_| self.cursor.read_u8())

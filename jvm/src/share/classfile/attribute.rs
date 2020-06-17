@@ -62,7 +62,27 @@ pub enum VerificationTypeInfo {
 }
 
 #[derive(Clone)]
-pub struct NAME {}
+pub struct InnerClass {
+    pub inner_class_info_index: u16,
+    pub outer_class_info_index: u16,
+    pub inner_name_index: u16,
+    pub inner_class_access_flags: u16,
+}
+
+#[derive(Clone)]
+pub enum ElementValue {}
+
+#[derive(Clone)]
+pub struct ElementValuePair {
+    element_name_index: u16,
+    element_value: ElementValue,
+}
+
+#[derive(Clone)]
+pub struct Annotation {
+    type_index: u16,
+    element_value_pairs: Vec<ElementValuePair>,
+}
 
 #[derive(Clone)]
 pub enum AttributeInfo {
@@ -91,7 +111,9 @@ pub enum AttributeInfo {
     Exceptions {
         exception_index_table: Vec<u16>,
     },
-    InnerClasses {},
+    InnerClasses {
+        classes: Vec<InnerClass>,
+    },
     EnclosingMethod {},
     Synthetic {},
     SourceDebugExtension {},
