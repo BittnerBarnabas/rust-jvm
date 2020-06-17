@@ -177,6 +177,13 @@ pub enum CpInfo {
     String {
         string_index: u16,
     },
+    InvokeDynamic {
+        bootstrap_method_attr_index: u16,
+        name_and_type_index: u16,
+    },
+    MethodType {
+        descriptor_index: u16,
+    },
 }
 
 impl CpInfo {
@@ -231,6 +238,13 @@ impl CpInfo {
             }),
             CONSTANT_STRING => Ok(CpInfo::String {
                 string_index: cursor.read_u16::<BigEndian>()?,
+            }),
+            CONSTANT_INVOKE_DYNAMIC => Ok(CpInfo::InvokeDynamic {
+                bootstrap_method_attr_index: cursor.read_u16::<BigEndian>()?,
+                name_and_type_index: cursor.read_u16::<BigEndian>()?,
+            }),
+            CONSTANT_METHOD_TYPE => Ok(CpInfo::MethodType {
+                descriptor_index: cursor.read_u16::<BigEndian>()?,
             }),
             other => Err(Error::new(
                 ErrorKind::Other,
