@@ -88,7 +88,9 @@ pub enum AttributeInfo {
     StackMapTable {
         entries: Vec<StackMapFrame>,
     },
-    Exceptions {},
+    Exceptions {
+        exception_index_table: Vec<u16>,
+    },
     InnerClasses {},
     EnclosingMethod {},
     Synthetic {},
