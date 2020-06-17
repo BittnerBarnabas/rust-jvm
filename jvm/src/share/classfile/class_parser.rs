@@ -5,7 +5,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use utils::ResultIterator;
 
 use crate::share::classfile::attribute::{
-    AttributeInfo, ExceptionHandler, LineNumber, LocalVariable,
+    AttributeInfo, ExceptionHandler, LineNumber, LocalVariable, StackMapFrame, VerificationTypeInfo,
 };
 use crate::share::classfile::constant_pool::{ConstantPool, CpInfo};
 use crate::share::classfile::field::FieldInfo;
@@ -253,6 +253,65 @@ impl ClassParserImpl {
             "Signature" => Ok(AttributeInfo::Signature {
                 signature_index: self.cursor.read_u16::<BigEndian>()?,
             }),
+            "StackMapTable" => {
+                let mut entries: Vec<StackMapFrame> = Vec::new();
+                let number_of_entries = self.cursor.read_u16::<BigEndian>()?;
+                for i in 0..number_of_entries {
+                    let frame_type = self.cursor.read_u8()?;
+                    //need to do this horrid logic as 'exclusive range patterns' is experimental
+                    if (0..64 as u8).contains(&frame_type) {
+                        entries.push(StackMapFrame::SameFrame)
+                    } else if (64..128 as u8).contains(&frame_type) {
+                        let verification_type_info = self.parse_verification_type_info()?;
+                        entries.push(StackMapFrame::SameLocals1StackItemFrame {
+                            stack: verification_type_info,
+                        })
+                    } else if (128..247 as u8).contains(&frame_type) {
+                        panic!("Reserved for future use only!")
+                    } else if 247 == frame_type {
+                        let offset_delta = self.cursor.read_u16::<BigEndian>()?;
+                        let verification_type_info = self.parse_verification_type_info()?;
+                        entries.push(StackMapFrame::SameLocals1StackItemFrameExtended {
+                            offset_delta,
+                            stack: verification_type_info,
+                        })
+                    } else if (248..251 as u8).contains(&frame_type) {
+                        let offset_delta = self.cursor.read_u16::<BigEndian>()?;
+                        entries.push(StackMapFrame::ChopFrame { offset_delta })
+                    } else if 251 == frame_type {
+                        let offset_delta = self.cursor.read_u16::<BigEndian>()?;
+                        entries.push(StackMapFrame::SameFrameExtended { offset_delta })
+                    } else if (252..255 as u8).contains(&frame_type) {
+                        let offset_delta = self.cursor.read_u16::<BigEndian>()?;
+                        let mut locals: Vec<VerificationTypeInfo> = Vec::new();
+                        for i in 0..(frame_type - 251) {
+                            locals.push(self.parse_verification_type_info()?);
+                        }
+                        entries.push(StackMapFrame::AppendFrame {
+                            offset_delta,
+                            locals,
+                        })
+                    } else if 255 == frame_type {
+                        let offset_delta = self.cursor.read_u16::<BigEndian>()?;
+                        let number_of_locals = self.cursor.read_u16::<BigEndian>()?;
+                        let mut locals: Vec<VerificationTypeInfo> = Vec::new();
+                        for i in 0..number_of_locals {
+                            locals.push(self.parse_verification_type_info()?);
+                        }
+                        let number_of_stack = self.cursor.read_u16::<BigEndian>()?;
+                        let mut stack: Vec<VerificationTypeInfo> = Vec::new();
+                        for i in 0..number_of_stack {
+                            stack.push(self.parse_verification_type_info()?);
+                        }
+                        entries.push(StackMapFrame::FullFrame {
+                            offset_delta,
+                            locals,
+                            stack,
+                        })
+                    }
+                }
+                Ok(AttributeInfo::StackMapTable { entries })
+            }
             unimplemented_attribute => {
                 log::warn!(
                     "Unimplemented attribute: {} wrapping in custom attribute",
@@ -270,6 +329,28 @@ impl ClassParserImpl {
                 })
             }
         };
+    }
+
+    fn parse_verification_type_info(&mut self) -> Result<VerificationTypeInfo, Error> {
+        let tag = self.cursor.read_u8()?;
+        Ok(match tag {
+            0 => VerificationTypeInfo::Top,
+            1 => VerificationTypeInfo::Integer,
+            2 => VerificationTypeInfo::Float,
+            3 => VerificationTypeInfo::Double,
+            4 => VerificationTypeInfo::Long,
+            5 => VerificationTypeInfo::Null,
+            6 => VerificationTypeInfo::UninitializedThis,
+            7 => {
+                let cpool_index = self.cursor.read_u16::<BigEndian>()?;
+                VerificationTypeInfo::Object { cpool_index }
+            }
+            8 => {
+                let offset = self.cursor.read_u16::<BigEndian>()?;
+                VerificationTypeInfo::UninitializedVariable { offset }
+            }
+            _ => panic!("This should never happen!"),
+        })
     }
 
     fn get_utf8_from_pool(&self, index: u16) -> Result<String, Error> {
