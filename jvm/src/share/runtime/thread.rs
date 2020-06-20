@@ -1,4 +1,5 @@
 use crate::share::utilities::context::GlobalContext;
+use crate::share::utilities::jvm_exception::JvmException;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::thread;
@@ -13,12 +14,12 @@ impl MainJavaThread {
         MainJavaThread { context }
     }
 
-    pub fn start(&self) -> JoinHandle<()> {
+    pub fn start(&self) -> JoinHandle<Result<(), JvmException>> {
         log::trace!("Starting MainJavaThread");
         let context = self.context.clone();
-        thread::spawn(move || {
+        thread::spawn(move || -> Result<(), JvmException> {
             log::trace!("Bootstrapping classes");
-            context.class_loader().bootstrap();
+            context.class_loader().bootstrap()
         })
     }
 }
