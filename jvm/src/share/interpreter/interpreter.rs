@@ -3,7 +3,7 @@ use crate::share::interpreter::evaluation_stack::EvaluationStack;
 use crate::share::interpreter::local_variables::JvmLocalVariableStore;
 use crate::share::interpreter::opcode;
 use crate::share::memory::jvm_object::Oop;
-use crate::share::runtime::stack_frame::JvmStackFrame;
+use crate::share::runtime::stack_frame::{JvmStackFrame, StackFrame};
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 
@@ -102,10 +102,10 @@ pub fn interpret(
                 &opcode::DSTORE_1 => panic!("UnImplemented byte-code: DSTORE_1"),
                 &opcode::DSTORE_2 => panic!("UnImplemented byte-code: DSTORE_2"),
                 &opcode::DSTORE_3 => panic!("UnImplemented byte-code: DSTORE_3"),
-                &opcode::ASTORE_0 => panic!("UnImplemented byte-code: ASTORE_0"),
-                &opcode::ASTORE_1 => panic!("UnImplemented byte-code: ASTORE_1"),
-                &opcode::ASTORE_2 => panic!("UnImplemented byte-code: ASTORE_2"),
-                &opcode::ASTORE_3 => panic!("UnImplemented byte-code: ASTORE_3"),
+                &opcode::ASTORE_0 => local_variables.store(eval_stack.pop(), 0),
+                &opcode::ASTORE_1 => local_variables.store(eval_stack.pop(), 1),
+                &opcode::ASTORE_2 => local_variables.store(eval_stack.pop(), 2),
+                &opcode::ASTORE_3 => local_variables.store(eval_stack.pop(), 3),
                 &opcode::IASTORE => panic!("UnImplemented byte-code: IASTORE"),
                 &opcode::LASTORE => panic!("UnImplemented byte-code: LASTORE"),
                 &opcode::FASTORE => panic!("UnImplemented byte-code: FASTORE"),
@@ -206,7 +206,7 @@ pub fn interpret(
                 &opcode::IRETURN => {
                     return match eval_stack.pop() {
                         java_int @ JvmValue::Int { val: _ } => Ok(java_int),
-                        _ => Err(JvmException::from_str(
+                        _ => Err(JvmException::from(
                             "Non-int value was found on top of stack when executing IRETURN",
                         )),
                     };
@@ -244,26 +244,36 @@ pub fn interpret(
                 &opcode::NEW => {
                     let index = read_u16(byte_codes, &mut ip);
 
-                    let qualified_klass_name = match current_frame
+                    let qualified_klass_name = current_frame
                         .current_class()
                         .constant_pool()
-                        .get_qualified_name(index)
-                    {
-                        Qualifier::Class { name } => name,
-                        _ => return Err(JvmException::new()),
-                    };
+                        .get_qualified_name(index);
 
                     let klass = current_frame
                         .class_loader()
                         .load_class(&qualified_klass_name)?;
-                    let new_obj = Oop::build_default_object(klass);
 
-                    let obj_ref = current_frame.heap().store(new_obj)?;
+                    let obj_ref = current_frame.heap().store_object(klass)?;
 
                     eval_stack.push(obj_ref);
                 }
                 &opcode::NEWARRAY => panic!("UnImplemented byte-code: NEWARRAY"),
-                &opcode::ANEWARRAY => panic!("UnImplemented byte-code: ANEWARRAY"),
+                &opcode::ANEWARRAY => {
+                    let array_size = eval_stack.pop_int()?;
+                    let array_type_index = read_u16(byte_codes, &mut ip);
+
+                    let qualified_klass_name = current_frame
+                        .current_class()
+                        .constant_pool()
+                        .get_qualified_name(array_type_index);
+
+                    let klass = current_frame
+                        .class_loader()
+                        .load_class(&qualified_klass_name)?;
+
+                    let array_ref = current_frame.heap().store_array(klass, array_size)?;
+                    eval_stack.push(array_ref);
+                }
                 &opcode::ARRAYLENGTH => panic!("UnImplemented byte-code: ARRAYLENGTH"),
                 &opcode::ATHROW => panic!("UnImplemented byte-code: ATHROW"),
                 &opcode::CHECKCAST => panic!("UnImplemented byte-code: CHECKCAST"),

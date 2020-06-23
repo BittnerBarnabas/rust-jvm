@@ -67,12 +67,10 @@ impl JvmStackFrame for StackFrame<'_> {
         };
 
         if method.is_native() {
-            let native_fn = method
-                .native_method()
-                .ok_or(JvmException::from_string(format!(
-                    "Native method is not linked for: {}",
-                    method.name_desc()
-                )))?;
+            let native_fn = method.native_method().ok_or(JvmException::from(format!(
+                "Native method is not linked for: {}",
+                method.name_desc()
+            )))?;
             return native_fn(NativeMethodArgs::new(&klass, &self.context));
         }
 

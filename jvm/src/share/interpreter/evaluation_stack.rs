@@ -1,3 +1,4 @@
+use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 use mockall::*;
 
@@ -35,6 +36,16 @@ impl EvaluationStack {
 
     pub fn pop(&mut self) -> JvmValue {
         self.stack.pop().expect("Cannot pop from empty stack!")
+    }
+
+    pub fn pop_int(&mut self) -> Result<i32, JvmException> {
+        match self.pop() {
+            JvmValue::Int { val } => Ok(val),
+            other => Err(JvmException::from(format!(
+                "JvmValue::Int expected but got: {}",
+                other
+            ))),
+        }
     }
 
     pub fn push(&mut self, value: JvmValue) {

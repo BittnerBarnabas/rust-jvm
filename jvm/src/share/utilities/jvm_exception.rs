@@ -7,14 +7,18 @@ impl JvmException {
     pub fn new() -> JvmException {
         JvmException { message: None }
     }
+}
 
-    pub fn from_string(message: String) -> JvmException {
+impl From<String> for JvmException {
+    fn from(message: String) -> Self {
         JvmException {
             message: Some(message),
         }
     }
+}
 
-    pub fn from_str(str: &str) -> JvmException {
-        JvmException::from_string(format!("{}", str))
+impl From<&'static str> for JvmException {
+    fn from(str: &'static str) -> Self {
+        JvmException::from(format!("{}", str))
     }
 }

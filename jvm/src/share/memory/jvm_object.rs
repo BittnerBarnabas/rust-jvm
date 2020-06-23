@@ -9,6 +9,10 @@ pub enum Oop {
         klass: Arc<Klass>,
         instance_data: Vec<JvmValue>,
     },
+    ArrayOop {
+        klass: Arc<Klass>,
+        instance_data: Vec<JvmValue>,
+    },
 }
 
 impl Oop {
@@ -20,6 +24,20 @@ impl Oop {
             .collect();
 
         Oop::ObjectOop {
+            klass,
+            instance_data,
+        }
+    }
+
+    pub fn build_array(klass: Arc<Klass>, size: i32) -> Oop {
+        assert!(
+            size >= 0,
+            "Cannot build array OOP with negative size! {}",
+            size
+        );
+        let instance_data: Vec<JvmValue> = (0..size).map(|_| JvmValue::null_obj()).collect();
+
+        Oop::ArrayOop {
             klass,
             instance_data,
         }
