@@ -22,6 +22,7 @@ fn main() {
 
     let main_thread = MainJavaThread::new(context.clone());
     let handle = main_thread.start();
-    handle.join().unwrap();
+    let result = handle.join().unwrap();
+    result.expect("JVM didn't exit correctly");
     println!("ABC")
 }

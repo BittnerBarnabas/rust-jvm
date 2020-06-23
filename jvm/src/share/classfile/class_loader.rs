@@ -9,7 +9,7 @@ use crate::share::classfile::klass::Klass;
 use crate::share::classfile::method::MethodInfo;
 use crate::share::runtime::stack_frame::{JvmStackFrame, StackFrame};
 use crate::share::utilities::context::GlobalContext;
-use crate::share::utilities::global_symbols::java_lang_Object;
+use crate::share::utilities::global_symbols::{java_lang_Object, java_lang_String};
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 use std::borrow::BorrowMut;
@@ -28,7 +28,7 @@ pub trait ClassLoader: Send + Sync {
         qualified_name: Qualifier,
     ) -> Result<Arc<MethodInfo>, JvmException>;
 
-    fn load_class(&self, qualified_name: &String) -> Result<Arc<Klass>, JvmException>;
+    fn load_class(&self, qualified_name: &Qualifier) -> Result<Arc<Klass>, JvmException>;
 
     fn load_and_init_class(&self, qualified_name: &String) -> Result<Arc<Klass>, JvmException>;
 
@@ -97,8 +97,12 @@ impl ClassLoader for BootstrapClassLoader {
         }
     }
 
-    fn load_class(&self, qualified_name: &String) -> Result<Arc<Klass>, JvmException> {
-        self.load_class(qualified_name)
+    fn load_class(&self, qualified_name: &Qualifier) -> Result<Arc<Klass>, JvmException> {
+        let qualified_klass_name = match qualified_name {
+            Qualifier::Class { name } => name,
+            _ => return Err(JvmException::new()),
+        };
+        self.load_class(qualified_klass_name)
     }
 
     fn load_and_init_class(&self, qualified_name: &String) -> Result<Arc<Klass>, JvmException> {
@@ -110,6 +114,7 @@ impl ClassLoader for BootstrapClassLoader {
 
     fn bootstrap(&self) -> Result<(), JvmException> {
         self.load_and_init_class(&*java_lang_Object)?;
+        // self.load_and_init_class(&*java_lang_String)?;
 
         Ok(())
     }
@@ -154,7 +159,7 @@ impl BootstrapClassLoader {
         let raw_class = self
             .resource_locator
             .read_from_resource(&class_name)
-            .map_err(|err| JvmException::from_string(err.to_string()))?;
+            .map_err(|err| JvmException::from(err.to_string()))?;
         //TODO: ClassNotFoundException
         let derived_class = self.derive_class(raw_class)?;
         derived_class.set_status(Loaded);
@@ -175,7 +180,7 @@ impl BootstrapClassLoader {
     fn derive_class(&self, class_to_derive: Vec<u8>) -> Result<Arc<Klass>, JvmException> {
         let klass = ClassParser::from(class_to_derive)
             .parse_class()
-            .map_err(|err| JvmException::from_string(err.to_string()))?;
+            .map_err(|err| JvmException::from(err.to_string()))?;
         //TODO: LinkageError, ClassFormatError and likes
 
         //we've got the class, now need to check its superclass
