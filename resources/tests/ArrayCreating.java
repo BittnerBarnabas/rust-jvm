@@ -15,4 +15,9 @@ public class ArrayCreating {
     public static class MyClass {
         private int a;
     }
+
+    public void method1(int a) {
+	                    int b = a + 5;
+			            }
+
 }

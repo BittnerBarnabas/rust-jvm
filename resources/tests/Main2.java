@@ -20,4 +20,16 @@ public class Main2 implements MyInterface<Object> {
 	public int getB() {
 	    return b;
 	}
+
+	public void method1(int a) {
+		int b = a + 5;
+	}
+
+	public static void method2(int a) {
+		int b = a + 5;
+	}
+
+	public void method3() {
+		int b = 5 + 2;
+	}
 }
