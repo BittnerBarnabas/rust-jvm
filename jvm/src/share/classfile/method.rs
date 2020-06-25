@@ -1,12 +1,16 @@
 use crate::share::classfile::access_flags;
-use crate::share::classfile::access_flags::ACC_NATIVE;
+use crate::share::classfile::access_flags::{ACC_NATIVE, ACC_STATIC};
 use crate::share::classfile::attribute::AttributeInfo;
+use crate::share::classfile::klass::Klass;
 use crate::share::native::native_methods::NativeMethod;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
+use std::borrow::BorrowMut;
 use std::cell::Cell;
+use std::fmt;
+use std::fmt::Formatter;
 use std::io::Error;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex, RwLock, Weak};
 
 pub struct MethodReference {
     pub class_name: String,
@@ -18,8 +22,21 @@ pub struct MethodInfo {
     name: String,
     descriptor: String,
     attributes: Vec<AttributeInfo>,
-    native_method: Mutex<Option<NativeMethod>>,
+    native_method: RwLock<Option<NativeMethod>>,
     code: Option<CodeInfo>,
+    klass: RwLock<Option<Weak<Klass>>>,
+}
+
+impl fmt::Display for MethodInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}.{}:{}",
+            self.get_klass().qualified_name(),
+            self.name,
+            self.descriptor
+        )
+    }
 }
 
 #[derive(Clone)]
@@ -58,8 +75,9 @@ impl MethodInfo {
             name,
             descriptor,
             attributes,
-            native_method: Mutex::new(None),
+            native_method: RwLock::new(None),
             code,
+            klass: RwLock::new(None),
         })
     }
 
@@ -86,14 +104,34 @@ impl MethodInfo {
     }
 
     pub fn is_native(&self) -> bool {
-        crate::share::classfile::access_flags::flag_matches(self.access_flags, ACC_NATIVE)
+        access_flags::flag_matches(self.access_flags, ACC_NATIVE)
+    }
+
+    pub fn is_static(&self) -> bool {
+        access_flags::flag_matches(self.access_flags, ACC_STATIC)
     }
 
     pub fn set_native_method(&self, method: NativeMethod) {
-        *self.native_method.lock().unwrap() = Some(method)
+        *self.native_method.write().unwrap() = Some(method)
     }
 
     pub fn native_method(&self) -> Option<NativeMethod> {
-        *self.native_method.lock().unwrap()
+        *self.native_method.read().unwrap()
     }
+
+    pub fn set_klass(&self, klass: Weak<Klass>) {
+        *self.klass.write().unwrap() = Some(klass)
+    }
+
+    pub fn get_klass(&self) -> Arc<Klass> {
+        self.klass
+            .read()
+            .unwrap()
+            .as_ref()
+            .expect("set_klass should be called before get_klass is called!")
+            .upgrade()
+            .expect("Klass has been unloaded but it's been referenced from code!")
+    }
+
+    // pub fn number_of_parameters(&self) -> u8 {}
 }

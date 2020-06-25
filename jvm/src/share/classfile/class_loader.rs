@@ -28,6 +28,11 @@ pub trait ClassLoader: Send + Sync {
         qualified_name: Qualifier,
     ) -> Result<Arc<MethodInfo>, JvmException>;
 
+    fn lookup_instance_method(
+        &self,
+        qualified_name: Qualifier,
+    ) -> Result<Arc<MethodInfo>, JvmException>;
+
     fn load_class(&self, qualified_name: &Qualifier) -> Result<Arc<Klass>, JvmException>;
 
     fn load_and_init_class(&self, qualified_name: &String) -> Result<Arc<Klass>, JvmException>;
@@ -95,6 +100,13 @@ impl ClassLoader for BootstrapClassLoader {
             }
             _ => Err(JvmException::new()),
         }
+    }
+
+    fn lookup_instance_method(
+        &self,
+        qualified_name: Qualifier,
+    ) -> Result<Arc<MethodInfo>, JvmException> {
+        self.lookup_static_method(qualified_name)
     }
 
     fn load_class(&self, qualified_name: &Qualifier) -> Result<Arc<Klass>, JvmException> {
@@ -213,7 +225,7 @@ impl BootstrapClassLoader {
 
         //TODO add extra checks over resolved interfaces: IncompatibleClassChangeError, and ClassCircularityError
 
-        Ok(Arc::new(klass))
+        Ok(klass)
     }
 
     fn link_class(&self, class_to_link: Arc<Klass>) -> Result<(), JvmException> {
@@ -257,7 +269,7 @@ impl BootstrapClassLoader {
                 .get_method_by_name_desc("<clinit>()V".to_string())
                 .map(|init: Arc<MethodInfo>| -> Result<(), JvmException> {
                     let frame = StackFrame::new(&self.context, class_to_init.clone());
-                    let result: JvmValue = frame.execute_method(init, class_to_init.clone())?;
+                    let result: JvmValue = frame.execute_method(init, Vec::new())?;
                     Ok(())
                 })
                 .unwrap_or_else(|| Ok(()))?;

@@ -67,10 +67,10 @@ pub fn interpret(
                 &opcode::DLOAD_1 => panic!("UnImplemented byte-code: DLOAD_1"),
                 &opcode::DLOAD_2 => panic!("UnImplemented byte-code: DLOAD_2"),
                 &opcode::DLOAD_3 => panic!("UnImplemented byte-code: DLOAD_3"),
-                &opcode::ALOAD_0 => panic!("UnImplemented byte-code: ALOAD_0"),
-                &opcode::ALOAD_1 => panic!("UnImplemented byte-code: ALOAD_1"),
-                &opcode::ALOAD_2 => panic!("UnImplemented byte-code: ALOAD_2"),
-                &opcode::ALOAD_3 => panic!("UnImplemented byte-code: ALOAD_3"),
+                &opcode::ALOAD_0 => eval_stack.push(local_variables.load(0)),
+                &opcode::ALOAD_1 => eval_stack.push(local_variables.load(1)),
+                &opcode::ALOAD_2 => eval_stack.push(local_variables.load(2)),
+                &opcode::ALOAD_3 => eval_stack.push(local_variables.load(3)),
                 &opcode::IALOAD => panic!("UnImplemented byte-code: IALOAD"),
                 &opcode::LALOAD => panic!("UnImplemented byte-code: LALOAD"),
                 &opcode::FALOAD => panic!("UnImplemented byte-code: FALOAD"),
@@ -221,7 +221,20 @@ pub fn interpret(
                 &opcode::GETFIELD => panic!("UnImplemented byte-code: GETFIELD"),
                 &opcode::PUTFIELD => panic!("UnImplemented byte-code: PUTFIELD"),
                 &opcode::INVOKEVIRTUAL => panic!("UnImplemented byte-code: INVOKEVIRTUAL"),
-                &opcode::INVOKESPECIAL => panic!("UnImplemented byte-code: INVOKESPECIAL"),
+                &opcode::INVOKESPECIAL => {
+                    let index = read_u16(byte_codes, &mut ip);
+
+                    let qualified_method_name = current_frame
+                        .current_class()
+                        .constant_pool()
+                        .get_qualified_name(index);
+
+                    let method_to_call = current_frame
+                        .class_loader()
+                        .lookup_instance_method(qualified_method_name)?;
+
+                    eval_stack.push(current_frame.execute_method(method_to_call, Vec::new())?);
+                }
                 &opcode::INVOKESTATIC => {
                     let index = read_u16(byte_codes, &mut ip);
 
@@ -234,10 +247,9 @@ pub fn interpret(
                         .class_loader()
                         .lookup_static_method(qualified_method_name)?;
 
-                    eval_stack.push(
-                        current_frame
-                            .execute_method(method_to_call, current_frame.current_class())?,
-                    );
+                    // method_to_call
+
+                    eval_stack.push(current_frame.execute_method(method_to_call, Vec::new())?);
                 }
                 &opcode::INVOKEINTERFACE => panic!("UnImplemented byte-code: INVOKEINTERFACE"),
                 &opcode::INVOKEDYNAMIC => panic!("UnImplemented byte-code: INVOKEDYNAMIC"),

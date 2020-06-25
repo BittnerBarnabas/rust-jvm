@@ -12,6 +12,7 @@ use crate::share::classfile::constant_pool::{ConstantPool, CpInfo};
 use crate::share::classfile::field::FieldInfo;
 use crate::share::classfile::klass::Klass;
 use crate::share::classfile::method::MethodInfo;
+use std::sync::Arc;
 
 const CLASS_MAGIC_NUMBER: u32 = 0xCAFEBABE;
 
@@ -31,7 +32,10 @@ impl ClassParser {
         ClassParser { bytes }
     }
 
-    pub fn parse_class(&self) -> Result<Klass, Error> {
+    /// Ideally this shouldn't return Arc<Klass> but just a Klass. It returns this for now so that it can
+    /// set the current klass of every methodInfo. Probably methodInfo should only have a & to the klass, but to make that work
+    /// the whole Klass should have a lifetime specified, which needs quite  a bit of work.
+    pub fn parse_class(&self) -> Result<Arc<Klass>, Error> {
         let mut cursor = Cursor::new(self.bytes.clone());
 
         ClassParser::validate_magic(&mut cursor)?;
@@ -41,13 +45,22 @@ impl ClassParser {
         let constant_pool_count = cursor.read_u16::<BigEndian>()?;
         let constant_pool = ConstantPool::create(&mut cursor, constant_pool_count as usize)?;
 
-        ClassParserImpl {
+        let parsed_klass = ClassParserImpl {
             cursor,
             major_version,
             minor_version,
             constant_pool,
         }
-        .parse()
+        .parse()?;
+
+        let klass = Arc::new(parsed_klass);
+
+        klass
+            .methods()
+            .iter()
+            .for_each(|method| method.set_klass(Arc::downgrade(&klass)));
+
+        Ok(klass)
     }
 
     fn validate_magic(cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {

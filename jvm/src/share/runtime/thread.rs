@@ -1,3 +1,4 @@
+use crate::share::classfile::class_loader::BootstrapClassLoader;
 use crate::share::classfile::constant_pool::Qualifier;
 use crate::share::runtime::stack_frame::{JvmStackFrame, StackFrame};
 use crate::share::utilities::context::GlobalContext;
@@ -43,7 +44,7 @@ impl MainJavaThread {
         log::trace!("Executing main method of init class: {}", init_class_name);
 
         let frame = StackFrame::new(&context, init_class.clone());
-        frame.execute_method(main_method, init_class)?;
+        frame.execute_method(main_method, Vec::new())?;
         Ok(())
     }
 }

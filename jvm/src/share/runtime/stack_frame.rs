@@ -2,7 +2,7 @@ use crate::share::classfile::class_loader::ClassLoader;
 use crate::share::classfile::klass::Klass;
 use crate::share::classfile::method::MethodInfo;
 use crate::share::interpreter::interpreter;
-use crate::share::interpreter::local_variables::LocalVariableStore;
+use crate::share::interpreter::local_variables::{JvmLocalVariableStore, LocalVariableStore};
 use crate::share::memory::heap::JvmHeap;
 use crate::share::native::native_methods::NativeMethodArgs;
 use crate::share::utilities::context::GlobalContext;
@@ -18,7 +18,7 @@ pub trait JvmStackFrame {
     fn execute_method(
         &self,
         method: Arc<MethodInfo>,
-        klass: Arc<Klass>,
+        args: Vec<JvmValue>,
     ) -> Result<JvmValue, JvmException>;
 }
 
@@ -57,12 +57,13 @@ impl JvmStackFrame for StackFrame<'_> {
     fn execute_method(
         &self,
         method: Arc<MethodInfo>,
-        klass: Arc<Klass>,
+        mut args: Vec<JvmValue>,
     ) -> Result<JvmValue, JvmException> {
+        log::trace!("Method to execute: {}", method);
         let next_frame = StackFrame {
             previous: Some(self),
             context: self.context.clone(),
-            current_class: klass.clone(),
+            current_class: method.get_klass(),
             current_method: Some(method.clone()),
         };
 
@@ -71,18 +72,28 @@ impl JvmStackFrame for StackFrame<'_> {
                 "Native method is not linked for: {}",
                 method.name_desc()
             )))?;
-            return native_fn(NativeMethodArgs::new(&klass, &self.context));
+            return native_fn(NativeMethodArgs::new(
+                &next_frame.current_class,
+                &next_frame.context,
+            ));
         }
 
+        //Method is Byte-Code implemented only
         match method.code_info() {
             Some(code_info) => {
                 let mut local_variables: LocalVariableStore =
                     LocalVariableStore::new(code_info.local_variables() as usize);
+
+                for i in 0..args.len() {
+                    local_variables.store(*args.get(i).expect("Should not happen."), i as u8)
+                }
+
                 let result = crate::share::interpreter::interpreter::interpret(
                     &next_frame,
                     code_info.bytes(),
                     &mut local_variables,
                 );
+                log::trace!("Executed byte-code method: {}", method);
                 return result;
             }
             _ => Err(JvmException::new()),
