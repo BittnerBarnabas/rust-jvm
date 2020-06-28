@@ -1,0 +1,64 @@
+use std::str::FromStr;
+use crate::share::parser::descriptors::{BaseType, FieldType, ComponentType, FieldDescriptor,
+ReturnDescriptor, ParameterDescriptor, MethodDescriptor};
+
+grammar;
+
+//////////// Field Descriptors ////////////////
+
+pub FieldDescriptor: FieldDescriptor = {
+    FieldType => FieldDescriptor::FieldDescriptor(<>)
+}
+
+FieldType: FieldType = {
+    BaseType => FieldType::BaseType(<>),
+    ObjectType => FieldType::ObjectType(<>),
+    ArrayType => FieldType::ArrayType(<>),
+}
+
+BaseType: BaseType = {
+    "Z" => BaseType::Boolean,
+    "B" => BaseType::Byte,
+    "S" => BaseType::Short,
+    "C" => BaseType::Char,
+    "I" => BaseType::Int,
+    "J" => BaseType::Long,
+    "F" => BaseType::Float,
+    "D" => BaseType::Double,
+};
+
+ObjectType: String = {
+    <s:ClassName> ";" => s
+}
+
+ClassName : String = {
+    r"(L)([a-zA-Z$0-9/]+)" => <>.chars().skip(1).collect()
+}
+
+ArrayType: Box<ComponentType> = {
+    "[" <ComponentType> => Box::new(<>)
+}
+
+ComponentType: ComponentType = {
+    FieldType => ComponentType::ComponentType(<>)
+}
+
+//////////// Method Descriptors ////////////////
+
+pub MethodDescriptor: MethodDescriptor = {
+    "(" <params:ParameterDescriptor*> ")" <ret:ReturnDescriptor> => {
+        MethodDescriptor {
+            parameters: params,
+            return_descriptor: ret,
+        }
+    }
+}
+
+ParameterDescriptor: ParameterDescriptor = {
+    FieldType => ParameterDescriptor::ParameterDescriptor(<>)
+}
+
+ReturnDescriptor: ReturnDescriptor = {
+    FieldType => ReturnDescriptor::Type(<>),
+    "V" => ReturnDescriptor::Void
+}

@@ -3,13 +3,15 @@ use crate::share::classfile::access_flags::{ACC_NATIVE, ACC_STATIC};
 use crate::share::classfile::attribute::AttributeInfo;
 use crate::share::classfile::klass::Klass;
 use crate::share::native::native_methods::NativeMethod;
+use crate::share::parser::descriptors::{MethodDescriptor, MethodDescriptorParser};
+use crate::share::parser::parser::Parser;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 use std::borrow::BorrowMut;
 use std::cell::Cell;
 use std::fmt;
 use std::fmt::Formatter;
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 use std::sync::{Arc, Mutex, RwLock, Weak};
 
 pub struct MethodReference {
@@ -20,7 +22,8 @@ pub struct MethodReference {
 pub struct MethodInfo {
     access_flags: u16,
     name: String,
-    descriptor: String,
+    raw_descriptor: String,
+    descriptor: MethodDescriptor,
     attributes: Vec<AttributeInfo>,
     native_method: RwLock<Option<NativeMethod>>,
     code: Option<CodeInfo>,
@@ -34,7 +37,7 @@ impl fmt::Display for MethodInfo {
             "{}.{}:{}",
             self.get_klass().qualified_name(),
             self.name,
-            self.descriptor
+            self.raw_descriptor
         )
     }
 }
@@ -66,13 +69,19 @@ impl MethodInfo {
     pub fn from(
         access_flags: u16,
         name: String,
-        descriptor: String,
+        raw_descriptor: String,
         attributes: Vec<AttributeInfo>,
     ) -> Result<MethodInfo, Error> {
         let code = MethodInfo::resolve_code(&attributes);
+
+        let descriptor = MethodDescriptorParser::new()
+            .parse(raw_descriptor.as_str())
+            .map_err(|err| Error::new(ErrorKind::Other, format!("{:?}", err)))?;
+
         Ok(MethodInfo {
             access_flags,
             name,
+            raw_descriptor,
             descriptor,
             attributes,
             native_method: RwLock::new(None),
@@ -96,7 +105,7 @@ impl MethodInfo {
     }
 
     pub fn name_desc(&self) -> String {
-        format!("{}{}", self.name, self.descriptor)
+        format!("{}{}", self.name, self.raw_descriptor)
     }
 
     pub fn code_info(&self) -> &Option<CodeInfo> {
@@ -133,5 +142,7 @@ impl MethodInfo {
             .expect("Klass has been unloaded but it's been referenced from code!")
     }
 
-    // pub fn number_of_parameters(&self) -> u8 {}
+    pub fn number_of_parameters(&self) -> u8 {
+        self.descriptor.parameters.len() as u8
+    }
 }
