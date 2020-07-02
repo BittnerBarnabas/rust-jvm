@@ -9,7 +9,7 @@ use std::fmt::{Debug, Formatter};
 #[path = "./descriptors_tests.rs"]
 mod descriptors_tests;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum BaseType {
     Boolean,
     Byte,
@@ -21,19 +21,19 @@ pub enum BaseType {
     Char,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum FieldType {
     BaseType(BaseType),
     ObjectType(String),
     ArrayType(Box<ComponentType>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ComponentType {
     ComponentType(FieldType),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum FieldDescriptor {
     FieldDescriptor(FieldType),
 }
@@ -54,7 +54,7 @@ pub enum ParameterDescriptor {
     ParameterDescriptor(FieldType),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ReturnDescriptor {
     Type(FieldType),
     Void,

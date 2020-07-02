@@ -3,7 +3,9 @@ use crate::share::classfile::access_flags::{ACC_NATIVE, ACC_STATIC};
 use crate::share::classfile::attribute::AttributeInfo;
 use crate::share::classfile::klass::Klass;
 use crate::share::native::native_methods::NativeMethod;
-use crate::share::parser::descriptors::{MethodDescriptor, MethodDescriptorParser};
+use crate::share::parser::descriptors::{
+    MethodDescriptor, MethodDescriptorParser, ReturnDescriptor,
+};
 use crate::share::parser::parser::Parser;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
@@ -144,5 +146,9 @@ impl MethodInfo {
 
     pub fn number_of_parameters(&self) -> u8 {
         self.descriptor.parameters.len() as u8
+    }
+
+    pub fn is_void(&self) -> bool {
+        self.descriptor.return_descriptor == ReturnDescriptor::Void
     }
 }

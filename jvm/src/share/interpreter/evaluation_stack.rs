@@ -26,7 +26,7 @@ impl EvaluationStack {
                     val: lhs_val + rhs_val,
                 })
             }
-            (lhs, rhs) => panic!(format!("Cannot add 2 values of type: {} {}", lhs, rhs)),
+            (lhs, rhs) => panic!(format!("Cannot add 2 values of type: {:?} {:?}", lhs, rhs)),
         }
     }
 
@@ -42,7 +42,7 @@ impl EvaluationStack {
         match self.pop() {
             JvmValue::Int { val } => Ok(val),
             other => Err(JvmException::from(format!(
-                "JvmValue::Int expected but got: {}",
+                "JvmValue::Int expected but got: {:?}",
                 other
             ))),
         }

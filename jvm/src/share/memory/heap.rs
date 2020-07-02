@@ -1,7 +1,8 @@
 use crate::share::classfile::klass::Klass;
 use crate::share::memory::jvm_object::Oop;
 use crate::share::utilities::jvm_exception::JvmException;
-use crate::share::utilities::jvm_value::JvmValue;
+use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
+use std::borrow::BorrowMut;
 use std::cell::{Cell, RefCell};
 use std::sync::{Arc, Mutex};
 
@@ -28,6 +29,46 @@ impl JvmHeap {
         self.store(oop)
     }
 
+    pub fn store_in_array(
+        &self,
+        ref_to_array: ObjectRef,
+        index: usize,
+        value: JvmValue,
+    ) -> Result<(), JvmException> {
+        let mut guard = self.heap.lock().unwrap();
+
+        let oop = guard
+            .get_mut(ref_to_array.get_ref())
+            .ok_or(JvmException::new())?;
+
+        match oop {
+            Oop::ArrayOop {
+                klass,
+                instance_data,
+            } => {
+                instance_data[index] = value;
+                Ok(())
+            }
+            _ => Err(JvmException::new()),
+        }
+    }
+
+    pub fn array_length(&self, ref_to_array: ObjectRef) -> Result<usize, JvmException> {
+        let guard = self.heap.lock().unwrap();
+
+        let oop = guard
+            .get(ref_to_array.get_ref())
+            .ok_or(JvmException::new())?;
+
+        match oop {
+            Oop::ArrayOop {
+                klass,
+                instance_data,
+            } => Ok(instance_data.len()),
+            _ => Err(JvmException::new()),
+        }
+    }
+
     fn store(&self, oop: Oop) -> Result<JvmValue, JvmException> {
         let object_reference = self.next_obj_ref();
         self.heap.lock().unwrap().push(oop);
@@ -36,11 +77,9 @@ impl JvmHeap {
 
     fn next_obj_ref(&self) -> JvmValue {
         let mut object_count = *self.object_count.lock().unwrap();
-        //TODO check size and throw OutOfMemoryErrors if alloc wouldn't succeed
-        let object_reference = JvmValue::ObjRef {
-            val: object_count.clone(),
-        };
         object_count += 1;
+        //TODO check size and throw OutOfMemoryErrors if alloc wouldn't succeed
+        let object_reference = JvmValue::ObjRef(ObjectRef::from(object_count.clone()));
         object_reference
     }
 }

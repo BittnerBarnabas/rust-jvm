@@ -110,7 +110,18 @@ pub fn interpret(
                 &opcode::LASTORE => panic!("UnImplemented byte-code: LASTORE"),
                 &opcode::FASTORE => panic!("UnImplemented byte-code: FASTORE"),
                 &opcode::DASTORE => panic!("UnImplemented byte-code: DASTORE"),
-                &opcode::AASTORE => panic!("UnImplemented byte-code: AASTORE"),
+                &opcode::AASTORE => {
+                    let value = eval_stack.pop();
+                    let index = eval_stack.pop_int()?;
+                    if let JvmValue::ObjRef(array_ref) = eval_stack.pop() {
+                        //do a lots of checks here
+                        current_frame
+                            .heap()
+                            .store_in_array(array_ref, index as usize, value)?;
+                    } else {
+                        return Err(JvmException::from("Stack should contain a Reference."));
+                    }
+                }
                 &opcode::BASTORE => panic!("UnImplemented byte-code: BASTORE"),
                 &opcode::CASTORE => panic!("UnImplemented byte-code: CASTORE"),
                 &opcode::SASTORE => panic!("UnImplemented byte-code: SASTORE"),
@@ -233,7 +244,20 @@ pub fn interpret(
                         .class_loader()
                         .lookup_instance_method(qualified_method_name)?;
 
-                    eval_stack.push(current_frame.execute_method(method_to_call, Vec::new())?);
+                    let number_of_parameters = method_to_call.number_of_parameters() + 1;
+                    let mut args: Vec<JvmValue> = Vec::with_capacity(number_of_parameters as usize);
+                    for i in number_of_parameters..0 {
+                        args.insert(i as usize, eval_stack.pop());
+                    }
+                    //passing in this as 0th arg.
+                    args.insert(0, eval_stack.pop());
+
+                    let void_method = method_to_call.is_void();
+                    let method_return_value = current_frame.execute_method(method_to_call, args)?;
+
+                    if !void_method {
+                        eval_stack.push(method_return_value);
+                    }
                 }
                 &opcode::INVOKESTATIC => {
                     let index = read_u16(byte_codes, &mut ip);
@@ -247,9 +271,17 @@ pub fn interpret(
                         .class_loader()
                         .lookup_static_method(qualified_method_name)?;
 
-                    // method_to_call
+                    let mut args: Vec<JvmValue> = Vec::new();
+                    for _ in 0..method_to_call.number_of_parameters() {
+                        args.push(eval_stack.pop());
+                    }
 
-                    eval_stack.push(current_frame.execute_method(method_to_call, Vec::new())?);
+                    let void_method = method_to_call.is_void();
+                    let method_return_value = current_frame.execute_method(method_to_call, args)?;
+
+                    if !void_method {
+                        eval_stack.push(method_return_value);
+                    }
                 }
                 &opcode::INVOKEINTERFACE => panic!("UnImplemented byte-code: INVOKEINTERFACE"),
                 &opcode::INVOKEDYNAMIC => panic!("UnImplemented byte-code: INVOKEDYNAMIC"),
@@ -286,7 +318,17 @@ pub fn interpret(
                     let array_ref = current_frame.heap().store_array(klass, array_size)?;
                     eval_stack.push(array_ref);
                 }
-                &opcode::ARRAYLENGTH => panic!("UnImplemented byte-code: ARRAYLENGTH"),
+                &opcode::ARRAYLENGTH => {
+                    if let JvmValue::ObjRef(array_ref) = eval_stack.pop() {
+                        //do a lots of checks here
+                        let array_length = current_frame.heap().array_length(array_ref)?;
+                        eval_stack.push(JvmValue::Int {
+                            val: array_length as i32,
+                        })
+                    } else {
+                        return Err(JvmException::from("Stack should contain a Reference."));
+                    }
+                }
                 &opcode::ATHROW => panic!("UnImplemented byte-code: ATHROW"),
                 &opcode::CHECKCAST => panic!("UnImplemented byte-code: CHECKCAST"),
                 &opcode::INSTANCEOF => panic!("UnImplemented byte-code: INSTANCEOF"),
