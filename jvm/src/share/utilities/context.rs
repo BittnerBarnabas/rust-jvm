@@ -1,7 +1,6 @@
 use crate::share::classfile::class_loader::ClassLoader;
 use crate::share::memory::heap::JvmHeap;
-use std::cell::{Cell, RefCell};
-use std::sync::{Arc, Mutex, Once, RwLock};
+use std::sync::{Arc, RwLock};
 
 pub struct GlobalContext {
     heap: Arc<JvmHeap>,

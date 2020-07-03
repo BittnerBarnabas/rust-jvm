@@ -5,9 +5,6 @@ use crate::share::classfile::klass::ClassLoadingStatus::{
     BeingInitialized, Initialized, Linked, Loaded, Mentioned,
 };
 use crate::share::classfile::method::MethodInfo;
-use std::borrow::{Borrow, BorrowMut};
-use std::cell::{Cell, Ref, RefCell};
-use std::slice::Iter;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]

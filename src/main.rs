@@ -7,13 +7,13 @@ use std::sync::Arc;
 
 fn main() {
     log4rs::init_file(
-        "/home/barnab/CLionProjects/rust-jvm/log4rs.yml",
+        "/Users/barnab/CLionProjects/rust-jvm/log4rs.yml",
         Default::default(),
     )
     .unwrap();
 
     let locator = ResourceLocator::new(String::from(
-        "/home/barnab/CLionProjects/rust-jvm/resources",
+        "/Users/barnab/CLionProjects/rust-jvm/resources",
     ));
     let heap = Arc::new(JvmHeap::new());
     let context = Arc::new(GlobalContext::new(heap));

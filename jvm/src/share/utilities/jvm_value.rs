@@ -1,5 +1,3 @@
-use std::fmt;
-
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct ObjectRef {
     val: usize,

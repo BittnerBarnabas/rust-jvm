@@ -1,9 +1,7 @@
-use regex::Error;
-
 use crate::share::parser::parser::Parser;
 use crate::share::utilities::jvm_exception::JvmException;
 use std::fmt;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug};
 
 #[cfg(test)]
 #[path = "./descriptors_tests.rs"]

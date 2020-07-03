@@ -1,9 +1,7 @@
-use crate::share::classfile::constant_pool::Qualifier;
 use crate::share::interpreter::evaluation_stack::EvaluationStack;
 use crate::share::interpreter::local_variables::JvmLocalVariableStore;
 use crate::share::interpreter::opcode;
-use crate::share::memory::jvm_object::Oop;
-use crate::share::runtime::stack_frame::{JvmStackFrame, StackFrame};
+use crate::share::runtime::stack_frame::{JvmStackFrame};
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 

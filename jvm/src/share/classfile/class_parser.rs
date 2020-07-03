@@ -286,7 +286,7 @@ impl ClassParserImpl {
     fn parse_stack_map_table(&mut self) -> Result<AttributeInfo, Error> {
         let mut entries: Vec<StackMapFrame> = Vec::new();
         let number_of_entries = self.cursor.read_u16::<BigEndian>()?;
-        for i in 0..number_of_entries {
+        for _i in 0..number_of_entries {
             let frame_type = self.cursor.read_u8()?;
             //need to do this horrid logic as 'exclusive range patterns' is experimental
             if (0..64 as u8).contains(&frame_type) {
@@ -314,7 +314,7 @@ impl ClassParserImpl {
             } else if (252..255 as u8).contains(&frame_type) {
                 let offset_delta = self.cursor.read_u16::<BigEndian>()?;
                 let mut locals: Vec<VerificationTypeInfo> = Vec::new();
-                for i in 0..(frame_type - 251) {
+                for _i in 0..(frame_type - 251) {
                     locals.push(self.parse_verification_type_info()?);
                 }
                 entries.push(StackMapFrame::AppendFrame {
@@ -325,12 +325,12 @@ impl ClassParserImpl {
                 let offset_delta = self.cursor.read_u16::<BigEndian>()?;
                 let number_of_locals = self.cursor.read_u16::<BigEndian>()?;
                 let mut locals: Vec<VerificationTypeInfo> = Vec::new();
-                for i in 0..number_of_locals {
+                for _i in 0..number_of_locals {
                     locals.push(self.parse_verification_type_info()?);
                 }
                 let number_of_stack = self.cursor.read_u16::<BigEndian>()?;
                 let mut stack: Vec<VerificationTypeInfo> = Vec::new();
-                for i in 0..number_of_stack {
+                for _i in 0..number_of_stack {
                     stack.push(self.parse_verification_type_info()?);
                 }
                 entries.push(StackMapFrame::FullFrame {
@@ -346,7 +346,7 @@ impl ClassParserImpl {
     fn parse_exceptions(&mut self) -> Result<AttributeInfo, Error> {
         let number_of_exceptions = self.cursor.read_u16::<BigEndian>()?;
         let mut exception_index_table: Vec<u16> = Vec::new();
-        for i in 0..number_of_exceptions {
+        for _i in 0..number_of_exceptions {
             exception_index_table.push(self.cursor.read_u16::<BigEndian>()?);
         }
         Ok(AttributeInfo::Exceptions {
@@ -357,7 +357,7 @@ impl ClassParserImpl {
     fn parse_inner_classes(&mut self) -> Result<AttributeInfo, Error> {
         let number_of_classes = self.cursor.read_u16::<BigEndian>()?;
         let mut classes: Vec<InnerClass> = Vec::new();
-        for i in 0..number_of_classes {
+        for _i in 0..number_of_classes {
             let inner_class = InnerClass {
                 inner_class_info_index: self.cursor.read_u16::<BigEndian>()?,
                 outer_class_info_index: self.cursor.read_u16::<BigEndian>()?,

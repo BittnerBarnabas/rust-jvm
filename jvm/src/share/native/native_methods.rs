@@ -24,7 +24,7 @@ impl<'a> NativeMethodArgs<'a> {
 
 pub type NativeMethod = fn(NativeMethodArgs) -> Result<JvmValue, JvmException>;
 
-pub fn hash_code(args: NativeMethodArgs) -> Result<JvmValue, JvmException> {
+pub fn hash_code(_args: NativeMethodArgs) -> Result<JvmValue, JvmException> {
     //TODO Implement this
     Ok(JvmValue::Int { val: 1 })
 }

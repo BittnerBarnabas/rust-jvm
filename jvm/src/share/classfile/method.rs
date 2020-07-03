@@ -7,14 +7,10 @@ use crate::share::parser::descriptors::{
     MethodDescriptor, MethodDescriptorParser, ReturnDescriptor,
 };
 use crate::share::parser::parser::Parser;
-use crate::share::utilities::jvm_exception::JvmException;
-use crate::share::utilities::jvm_value::JvmValue;
-use std::borrow::BorrowMut;
-use std::cell::Cell;
 use std::fmt;
 use std::fmt::Formatter;
 use std::io::{Error, ErrorKind};
-use std::sync::{Arc, Mutex, RwLock, Weak};
+use std::sync::{Arc, RwLock, Weak};
 
 pub struct MethodReference {
     pub class_name: String,

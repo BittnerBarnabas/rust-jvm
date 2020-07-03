@@ -4,7 +4,6 @@ use crate::share::utilities::global_symbols::{
     java_lang_Object_hashCode, java_lang_Object_registerNatives,
 };
 use std::collections::HashMap;
-use std::iter::Map;
 use std::rc::Rc;
 
 pub struct NativeMethodRepo {

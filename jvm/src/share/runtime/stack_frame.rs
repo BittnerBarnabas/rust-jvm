@@ -1,7 +1,6 @@
 use crate::share::classfile::class_loader::ClassLoader;
 use crate::share::classfile::klass::Klass;
 use crate::share::classfile::method::MethodInfo;
-use crate::share::interpreter::interpreter;
 use crate::share::interpreter::local_variables::{JvmLocalVariableStore, LocalVariableStore};
 use crate::share::memory::heap::JvmHeap;
 use crate::share::native::native_methods::NativeMethodArgs;
@@ -57,7 +56,7 @@ impl JvmStackFrame for StackFrame<'_> {
     fn execute_method(
         &self,
         method: Arc<MethodInfo>,
-        mut args: Vec<JvmValue>,
+        args: Vec<JvmValue>,
     ) -> Result<JvmValue, JvmException> {
         log::trace!("Method to execute: {}", method);
         let next_frame = StackFrame {

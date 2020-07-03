@@ -2,8 +2,6 @@ use crate::share::classfile::klass::Klass;
 use crate::share::memory::jvm_object::Oop;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
-use std::borrow::BorrowMut;
-use std::cell::{Cell, RefCell};
 use std::sync::{Arc, Mutex};
 
 pub struct JvmHeap {
@@ -43,7 +41,7 @@ impl JvmHeap {
 
         match oop {
             Oop::ArrayOop {
-                klass,
+                klass: _,
                 instance_data,
             } => {
                 instance_data[index] = value;
@@ -62,7 +60,7 @@ impl JvmHeap {
 
         match oop {
             Oop::ArrayOop {
-                klass,
+                klass: _,
                 instance_data,
             } => Ok(instance_data.len()),
             _ => Err(JvmException::new()),

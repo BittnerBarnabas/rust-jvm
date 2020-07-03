@@ -13,7 +13,6 @@ use crate::share::utilities::global_symbols::{java_lang_Object, java_lang_String
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 use std::borrow::BorrowMut;
-use std::cell::RefCell;
 use std::io::Error;
 use std::sync::{Arc, Mutex};
 use utils::ResultIterator;
@@ -39,8 +38,6 @@ pub trait ClassLoader: Send + Sync {
 
     fn bootstrap(&self) -> Result<(), JvmException>;
 }
-
-type ClassLoaderKey = String;
 
 pub struct ResourceLocator {
     resource_root: String,
@@ -242,7 +239,7 @@ impl BootstrapClassLoader {
         Ok(())
     }
 
-    fn verify_class(&self, class_to_link: Arc<Klass>) -> Result<(), JvmException> {
+    fn verify_class(&self, _class_to_link: Arc<Klass>) -> Result<(), JvmException> {
         //TODO do some bytecode verification
         Ok(())
     }
@@ -269,7 +266,7 @@ impl BootstrapClassLoader {
                 .get_method_by_name_desc("<clinit>()V".to_string())
                 .map(|init: Arc<MethodInfo>| -> Result<(), JvmException> {
                     let frame = StackFrame::new(&self.context, class_to_init.clone());
-                    let result: JvmValue = frame.execute_method(init, Vec::new())?;
+                    frame.execute_method(init, Vec::new())?;
                     Ok(())
                 })
                 .unwrap_or_else(|| Ok(()))?;

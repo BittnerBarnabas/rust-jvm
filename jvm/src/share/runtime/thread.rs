@@ -1,9 +1,7 @@
-use crate::share::classfile::class_loader::BootstrapClassLoader;
 use crate::share::classfile::constant_pool::Qualifier;
 use crate::share::runtime::stack_frame::{JvmStackFrame, StackFrame};
 use crate::share::utilities::context::GlobalContext;
 use crate::share::utilities::jvm_exception::JvmException;
-use std::rc::Rc;
 use std::sync::Arc;
 use std::thread;
 use std::thread::JoinHandle;

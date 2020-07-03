@@ -1,8 +1,6 @@
-use crate::share::classfile::access_flags;
 use crate::share::classfile::access_flags::ACC_STATIC;
 use crate::share::classfile::attribute::AttributeInfo;
 use crate::share::utilities::jvm_value::JvmValue;
-use std::cell::Cell;
 use std::sync::Mutex;
 
 // #[derive(Clone)]
