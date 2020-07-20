@@ -10,7 +10,12 @@ public class ArrayCreating {
 
         boolean a = 2 == myClasses.length;
         boolean b = 1 == myClasses2.length;
+        if (b) {
+          tester(b);
+        }
     }
+
+    private static void tester(boolean t) {}
 
     public static class MyClass {
         private int a;

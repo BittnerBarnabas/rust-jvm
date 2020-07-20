@@ -8,5 +8,5 @@ pub fn myTest() {
         .expect_pop()
         .returning(|| JvmValue::Boolean { val: false });
     let x = mymock.pop();
-    println!("{}", x);
+    println!("{:?}", x);
 }

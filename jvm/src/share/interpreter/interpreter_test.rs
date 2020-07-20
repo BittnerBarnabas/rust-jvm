@@ -8,7 +8,7 @@ use crate::share::runtime::stack_frame::MockStackFrame as StackFrame;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 
-fn run_interpreter_only(code: Vec<u8>) -> Result<JvmValue, JvmException> {
+fn run_interpreter(code: Vec<u8>) -> Result<JvmValue, JvmException> {
     let mut store = LocalVariableStore::default();
     let frame = StackFrame::new();
 
@@ -18,49 +18,49 @@ fn run_interpreter_only(code: Vec<u8>) -> Result<JvmValue, JvmException> {
 
 #[test]
 pub fn noop() {
-    let result = run_interpreter_only(vec![opcode::NOP, opcode::RETURN]);
+    let result = run_interpreter(vec![opcode::NOP, opcode::RETURN]);
     assert_eq!(result, Ok(JvmValue::Void {}))
 }
 
 #[test]
 pub fn bipush_int_values_then_ireturn() {
-    let result = run_interpreter_only(vec![0x10, opcode::BIPUSH, opcode::IRETURN]);
+    let result = run_interpreter(vec![0x10, opcode::BIPUSH, opcode::IRETURN]);
     assert_eq!(result, Ok(JvmValue::Int { val: 16 }))
 }
 
 #[test]
 pub fn iconst_m1_then_ireturn() {
-    let result = run_interpreter_only(vec![opcode::ICONST_M1, opcode::IRETURN]);
+    let result = run_interpreter(vec![opcode::ICONST_M1, opcode::IRETURN]);
     assert_eq!(result, Ok(JvmValue::Int { val: -1 }))
 }
 
 #[test]
 pub fn iconst_1_then_ireturn() {
-    let result = run_interpreter_only(vec![opcode::ICONST_1, opcode::IRETURN]);
+    let result = run_interpreter(vec![opcode::ICONST_1, opcode::IRETURN]);
     assert_eq!(result, Ok(JvmValue::Int { val: 1 }))
 }
 
 #[test]
 pub fn iconst_2_then_ireturn() {
-    let result = run_interpreter_only(vec![opcode::ICONST_2, opcode::IRETURN]);
+    let result = run_interpreter(vec![opcode::ICONST_2, opcode::IRETURN]);
     assert_eq!(result, Ok(JvmValue::Int { val: 2 }))
 }
 
 #[test]
 pub fn iconst_3_then_ireturn() {
-    let result = run_interpreter_only(vec![opcode::ICONST_3, opcode::IRETURN]);
+    let result = run_interpreter(vec![opcode::ICONST_3, opcode::IRETURN]);
     assert_eq!(result, Ok(JvmValue::Int { val: 3 }))
 }
 
 #[test]
 pub fn iconst_4_then_ireturn() {
-    let result = run_interpreter_only(vec![opcode::ICONST_4, opcode::IRETURN]);
+    let result = run_interpreter(vec![opcode::ICONST_4, opcode::IRETURN]);
     assert_eq!(result, Ok(JvmValue::Int { val: 4 }))
 }
 
 #[test]
 pub fn iconst_5_then_ireturn() {
-    let result = run_interpreter_only(vec![opcode::ICONST_5, opcode::IRETURN]);
+    let result = run_interpreter(vec![opcode::ICONST_5, opcode::IRETURN]);
     assert_eq!(result, Ok(JvmValue::Int { val: 5 }))
 }
 
@@ -113,6 +113,7 @@ pub fn iload0_with_correct_index() {
 
     assert_eq!(Ok(JvmValue::Int { val: 12 }), result)
 }
+
 #[test]
 pub fn iload1_with_correct_index() {
     let mut store = LocalVariableStore::default();
@@ -129,6 +130,7 @@ pub fn iload1_with_correct_index() {
 
     assert_eq!(Ok(JvmValue::Int { val: 12 }), result)
 }
+
 #[test]
 pub fn iload2_with_correct_index() {
     let mut store = LocalVariableStore::default();
@@ -145,6 +147,7 @@ pub fn iload2_with_correct_index() {
 
     assert_eq!(Ok(JvmValue::Int { val: 12 }), result)
 }
+
 #[test]
 pub fn iload3_with_correct_index() {
     let mut store = LocalVariableStore::default();
@@ -160,4 +163,23 @@ pub fn iload3_with_correct_index() {
     let result = interpret(&frame, &code, &mut store);
 
     assert_eq!(Ok(JvmValue::Int { val: 12 }), result)
+}
+
+#[test]
+pub fn ifeq_true_branch() {
+    let mut store = LocalVariableStore::default();
+    let frame = StackFrame::new();
+
+    let test_value = opcode::ICONST_0;
+    let cond_opcode = opcode::IFEQ;
+    let result = 1;
+
+    let code = vec![test_value,
+                    cond_opcode, 0x0, 0x5,
+                    opcode::ICONST_0, opcode::IRETURN,
+                    opcode::ICONST_1, opcode::IRETURN];
+
+    let result = interpret(&frame, &code, &mut store);
+
+    assert_eq!(result, Ok(JvmValue::Int { val: result }))
 }

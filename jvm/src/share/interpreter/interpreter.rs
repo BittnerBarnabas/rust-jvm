@@ -9,6 +9,15 @@ use crate::share::utilities::jvm_value::JvmValue;
 #[path = "./interpreter_test.rs"]
 mod interpreter_test;
 
+mod comparators {
+    pub const EQ: fn(i32, i32) -> bool = |lhs, rhs| lhs == rhs;
+    pub const NEQ: fn(i32, i32) -> bool = |lhs, rhs| lhs != rhs;
+    pub const LE: fn(i32, i32) -> bool = |lhs, rhs| lhs <= rhs;
+    pub const LT: fn(i32, i32) -> bool = |lhs, rhs| lhs < rhs;
+    pub const GE: fn(i32, i32) -> bool = |lhs, rhs| lhs >= rhs;
+    pub const GT: fn(i32, i32) -> bool = |lhs, rhs| lhs > rhs;
+}
+
 pub fn interpret(
     current_frame: &impl JvmStackFrame,
     byte_codes: &Vec<u8>,
@@ -193,21 +202,26 @@ pub fn interpret(
                 &opcode::FCMPG => panic!("UnImplemented byte-code: FCMPG"),
                 &opcode::DCMPL => panic!("UnImplemented byte-code: DCMPL"),
                 &opcode::DCMPG => panic!("UnImplemented byte-code: DCMPG"),
-                &opcode::IFEQ => panic!("UnImplemented byte-code: IFEQ"),
-                &opcode::IFNE => panic!("UnImplemented byte-code: IFNE"),
-                &opcode::IFLT => panic!("UnImplemented byte-code: IFLT"),
-                &opcode::IFGE => panic!("UnImplemented byte-code: IFGE"),
-                &opcode::IFGT => panic!("UnImplemented byte-code: IFGT"),
-                &opcode::IFLE => panic!("UnImplemented byte-code: IFLE"),
-                &opcode::IF_ICMPEQ => panic!("UnImplemented byte-code: IF_ICMPEQ"),
-                &opcode::IF_ICMPNE => panic!("UnImplemented byte-code: IF_ICMPNE"),
-                &opcode::IF_ICMPLT => panic!("UnImplemented byte-code: IF_ICMPLT"),
-                &opcode::IF_ICMPGE => panic!("UnImplemented byte-code: IF_ICMPGE"),
-                &opcode::IF_ICMPGT => panic!("UnImplemented byte-code: IF_ICMPGT"),
-                &opcode::IF_ICMPLE => panic!("UnImplemented byte-code: IF_ICMPLE"),
+                &opcode::IFEQ => eval_if(byte_codes, &mut ip, &mut eval_stack, comparators::EQ)?,
+                &opcode::IFNE => eval_if(byte_codes, &mut ip, &mut eval_stack, comparators::NEQ)?,
+                &opcode::IFLT => eval_if(byte_codes, &mut ip, &mut eval_stack, comparators::LT)?,
+                &opcode::IFGE => eval_if(byte_codes, &mut ip, &mut eval_stack, comparators::GE)?,
+                &opcode::IFGT => eval_if(byte_codes, &mut ip, &mut eval_stack, comparators::GT)?,
+                &opcode::IFLE => eval_if(byte_codes, &mut ip, &mut eval_stack, comparators::LE)?,
+                &opcode::IF_ICMPEQ => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::EQ)?,
+                &opcode::IF_ICMPNE => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::LE)?,
+                &opcode::IF_ICMPLT => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::LT)?,
+                &opcode::IF_ICMPGE => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::GE)?,
+                &opcode::IF_ICMPGT => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::GT)?,
+                &opcode::IF_ICMPLE => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::LE)?,
                 &opcode::IF_ACMPEQ => panic!("UnImplemented byte-code: IF_ACMPEQ"),
                 &opcode::IF_ACMPNE => panic!("UnImplemented byte-code: IF_ACMPNE"),
-                &opcode::GOTO => panic!("UnImplemented byte-code: GOTO"),
+                &opcode::GOTO => {
+                    let tmp_ip = ip;
+                    //TODO make this cleaner as we're adding 1 to ip in all iterations.
+                    let offset = read_u16(byte_codes, &mut ip) - 1;
+                    ip = tmp_ip + offset as usize;
+                }
                 &opcode::JSR => panic!("UnImplemented byte-code: JSR"),
                 &opcode::RET => panic!("UnImplemented byte-code: RET"),
                 &opcode::TABLESWITCH => panic!("UnImplemented byte-code: TABLESWITCH"),
@@ -349,6 +363,41 @@ pub fn interpret(
         }
         ip += 1;
     }
+}
+
+fn eval_if_cmp(byte_codes: &Vec<u8>,
+               mut ip: &mut usize,
+               eval_stack: &mut EvaluationStack,
+               comparator: fn(i32, i32) -> bool) -> Result<(), JvmException> {
+
+    let lhs = eval_stack.pop_int()?;
+    let rhs = eval_stack.pop_int()?;
+
+    evaluate_conditional(byte_codes, &mut ip, comparator, lhs, rhs)
+}
+
+fn eval_if(byte_codes: &Vec<u8>,
+           mut ip: &mut usize,
+           eval_stack: &mut EvaluationStack,
+           comparator: fn(i32, i32) -> bool) -> Result<(), JvmException> {
+    let value = eval_stack.pop_int()?;
+    evaluate_conditional(byte_codes, &mut ip, comparator, value, 0)
+}
+
+fn evaluate_conditional(byte_codes: &Vec<u8>,
+                        mut ip: &mut usize,
+                        comparator: fn(i32, i32) -> bool,
+                        lhs: i32, rhs: i32) -> Result<(), JvmException> {
+    let tmp_ip = *ip;
+
+    //TODO make this cleaner as we're adding 1 to ip in all iterations.
+    let offset = read_u16(byte_codes, &mut ip) - 1;
+
+    if comparator(lhs, rhs) {
+        *ip = tmp_ip + offset as usize;
+    }
+
+    Ok(())
 }
 
 fn read_u8(byte_codes: &Vec<u8>, ip: &mut usize) -> u8 {

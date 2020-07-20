@@ -92,7 +92,7 @@ impl JvmStackFrame for StackFrame<'_> {
                     code_info.bytes(),
                     &mut local_variables,
                 );
-                log::trace!("Executed byte-code method: {}", method);
+                log::trace!("Returning from byte-code method: {}", method);
                 return result;
             }
             _ => Err(JvmException::new()),
