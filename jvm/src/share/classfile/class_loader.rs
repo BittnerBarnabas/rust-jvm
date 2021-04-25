@@ -123,7 +123,7 @@ impl ClassLoader for BootstrapClassLoader {
 
     fn bootstrap(&self) -> Result<(), JvmException> {
         self.load_and_init_class(&*java_lang_Object)?;
-        // self.load_and_init_class(&*java_lang_String)?;
+        self.load_and_init_class(&*java_lang_String)?;
 
         Ok(())
     }

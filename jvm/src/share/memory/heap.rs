@@ -3,16 +3,18 @@ use crate::share::memory::jvm_object::Oop;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::AtomicUsize;
+use core::sync::atomic::Ordering;
 
 pub struct JvmHeap {
-    object_count: Mutex<usize>,
+    object_count: AtomicUsize,
     heap: Mutex<Vec<Oop>>,
 }
 
 impl JvmHeap {
     pub fn new() -> JvmHeap {
         JvmHeap {
-            object_count: Mutex::new(0),
+            object_count: AtomicUsize::new(0),
             heap: Mutex::new(Vec::new()),
         }
     }
@@ -47,7 +49,7 @@ impl JvmHeap {
                 instance_data[index] = value;
                 Ok(())
             }
-            _ => Err(JvmException::new()),
+            oop => Err(JvmException::from(format!("ObjectRef {:?} should point to array on heap but it was {}", ref_to_array, oop))),
         }
     }
 
@@ -74,10 +76,9 @@ impl JvmHeap {
     }
 
     fn next_obj_ref(&self) -> JvmValue {
-        let mut object_count = *self.object_count.lock().unwrap();
-        object_count += 1;
+        let object_count = self.object_count.fetch_add(1, Ordering::AcqRel);
         //TODO check size and throw OutOfMemoryErrors if alloc wouldn't succeed
-        let object_reference = JvmValue::ObjRef(ObjectRef::from(object_count.clone()));
+        let object_reference = JvmValue::ObjRef(ObjectRef::from(object_count));
         object_reference
     }
 }

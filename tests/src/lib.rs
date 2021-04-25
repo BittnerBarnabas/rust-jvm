@@ -6,6 +6,7 @@ mod tests {
     use jvm::share::memory::heap::JvmHeap;
     use jvm::share::utilities::context::GlobalContext;
     use std::rc::Rc;
+    use std::sync::Arc;
 
     // use runtime::core::class_loader::ClassLoader;
     // use runtime::core::class_parser::ClassParser;
@@ -72,21 +73,21 @@ mod tests {
     #[test]
     pub fn testBootStrapLoader() {
         log4rs::init_file(
-            "/home/barnab/CLionProjects/rust-jvm/log4rs.yml",
+            "/home/barnab/projects/rust-jvm/log4rs.yml",
             Default::default(),
         )
         .unwrap();
 
         let locator = ResourceLocator::new(String::from(
-            "/home/barnab/CLionProjects/rust-jvm/resources",
+            "/home/barnab/projects/rust-jvm/resources",
         ));
-        let heap = Rc::new(JvmHeap::new());
-        let context = Rc::new(GlobalContext::new(heap));
-        let loader = Rc::new(BootstrapClassLoader::new(locator, context.clone()));
+        let heap = Arc::new(JvmHeap::new());
+        let context = Arc::new(GlobalContext::new(heap));
+        let loader = Arc::new(BootstrapClassLoader::new(locator, context.clone()));
         context.set_class_loader(loader.clone());
 
         let result = loader
-            .load_and_init_class(String::from("java/lang/Object"))
+            .load_and_init_class(&String::from("java/lang/Object"))
             .expect("Should be able to load Object!");
         println!("ABC");
     }

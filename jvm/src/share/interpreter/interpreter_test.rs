@@ -172,14 +172,36 @@ pub fn ifeq_true_branch() {
 
     let test_value = opcode::ICONST_0;
     let cond_opcode = opcode::IFEQ;
-    let result = 1;
+    let offset = 0x5;
 
     let code = vec![test_value,
-                    cond_opcode, 0x0, 0x5,
+                    cond_opcode, 0x0, offset,
                     opcode::ICONST_0, opcode::IRETURN,
                     opcode::ICONST_1, opcode::IRETURN];
 
-    let result = interpret(&frame, &code, &mut store);
+    let actual_return = interpret(&frame, &code, &mut store);
+    let expected_return_value = 1;
 
-    assert_eq!(result, Ok(JvmValue::Int { val: result }))
+    assert_eq!(actual_return, Ok(JvmValue::Int { val: expected_return_value }))
+}
+
+#[test]
+pub fn ifeq_false_branch() {
+    let mut store = LocalVariableStore::default();
+    let frame = StackFrame::new();
+
+    let test_value = opcode::ICONST_3;
+    let test_value_comparison = opcode::ICONST_2;
+    let cond_opcode = opcode::IFEQ;
+    let offset = 0x05;
+
+    let code = vec![test_value,
+                    cond_opcode, 0x0, offset,
+                    opcode::ICONST_0, opcode::IRETURN,
+                    opcode::ICONST_1, opcode::IRETURN];
+
+    let actual_return = interpret(&frame, &code, &mut store);
+    let expected_return_value = 0;
+
+    assert_eq!(actual_return, Ok(JvmValue::Int { val: expected_return_value }))
 }

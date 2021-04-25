@@ -218,7 +218,7 @@ pub fn interpret(
                 &opcode::IF_ACMPNE => panic!("UnImplemented byte-code: IF_ACMPNE"),
                 &opcode::GOTO => {
                     let tmp_ip = ip;
-                    //TODO make this cleaner as we're adding 1 to ip in all iterations.
+                    //TODO make this cleaner as we're adding 1 to ip in all iterations so we need to offset by 1 less
                     let offset = read_u16(byte_codes, &mut ip) - 1;
                     ip = tmp_ip + offset as usize;
                 }
@@ -390,7 +390,7 @@ fn evaluate_conditional(byte_codes: &Vec<u8>,
                         lhs: i32, rhs: i32) -> Result<(), JvmException> {
     let tmp_ip = *ip;
 
-    //TODO make this cleaner as we're adding 1 to ip in all iterations.
+    //TODO make this cleaner as we're adding 1 to ip in all iterations so we need to offset by 1 less
     let offset = read_u16(byte_codes, &mut ip) - 1;
 
     if comparator(lhs, rhs) {

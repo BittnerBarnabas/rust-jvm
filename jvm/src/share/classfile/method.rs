@@ -11,6 +11,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::io::{Error, ErrorKind};
 use std::sync::{Arc, RwLock, Weak};
+use core::fmt::Display;
 
 pub struct MethodReference {
     pub class_name: String,
@@ -37,6 +38,12 @@ impl fmt::Display for MethodInfo {
             self.name,
             self.raw_descriptor
         )
+    }
+}
+
+impl fmt::Debug for MethodInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        Display::fmt(self, f)
     }
 }
 

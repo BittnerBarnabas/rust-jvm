@@ -1,6 +1,8 @@
 use crate::share::classfile::klass::Klass;
 use crate::share::utilities::jvm_value::JvmValue;
 use std::sync::Arc;
+use std::fmt;
+use std::fmt::Formatter;
 
 pub enum Oop {
     ObjectOop {
@@ -14,6 +16,20 @@ pub enum Oop {
         instance_data: Vec<JvmValue>,
     },
 }
+
+impl fmt::Display for Oop {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Oop::ObjectOop { klass, .. } => {
+                write!(f, "ObjectOop({})", klass.qualified_name())
+            }
+            Oop::ArrayOop { klass, .. } => {
+                write!(f, "ArrayOop({})", klass.qualified_name())
+            }
+        }
+    }
+}
+
 
 impl Oop {
     pub fn build_default_object(klass: Arc<Klass>) -> Oop {
