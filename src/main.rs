@@ -4,6 +4,8 @@ use jvm::share::runtime::thread::MainJavaThread;
 use jvm::share::utilities::context::GlobalContext;
 use std::rc::Rc;
 use std::sync::Arc;
+use std::borrow::{Borrow, BorrowMut};
+use jvm::share::native::native_method_repo::NativeMethodRepo;
 
 fn main() {
     log4rs::init_file(
@@ -18,7 +20,10 @@ fn main() {
     let heap = Arc::new(JvmHeap::new());
     let context = Arc::new(GlobalContext::new(heap));
     let loader = Arc::new(BootstrapClassLoader::new(locator, context.clone()));
-    context.set_class_loader(loader.clone());
+    context.set_class_loader(loader);
+
+    let native_method_repo = Arc::new(NativeMethodRepo::new());
+    context.set_native_method_repo(native_method_repo);
 
     let main_thread = MainJavaThread::new(context.clone());
     let handle = main_thread.start();

@@ -20,7 +20,7 @@ impl MainJavaThread {
         let context = self.context.clone();
         thread::spawn(move || -> Result<(), JvmException> {
             log::trace!("Bootstrapping classes");
-            let class_loader = context.class_loader();
+            let class_loader = &context.class_loader();
             class_loader.bootstrap()?;
 
             MainJavaThread::call_main_method(&context)

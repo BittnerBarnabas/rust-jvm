@@ -24,11 +24,6 @@ impl<'a> NativeMethodArgs<'a> {
 
 pub type NativeMethod = fn(NativeMethodArgs) -> Result<JvmValue, JvmException>;
 
-pub fn hash_code(_args: NativeMethodArgs) -> Result<JvmValue, JvmException> {
-    //TODO Implement this
-    Ok(JvmValue::Int { val: 1 })
-}
-
 pub fn register_natives(args: NativeMethodArgs) -> Result<JvmValue, JvmException> {
     log::trace!(
         "register_natives called on class: {}",

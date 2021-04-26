@@ -3,7 +3,8 @@ use crate::share::interpreter::local_variables::JvmLocalVariableStore;
 use crate::share::interpreter::opcode;
 use crate::share::runtime::stack_frame::{JvmStackFrame};
 use crate::share::utilities::jvm_exception::JvmException;
-use crate::share::utilities::jvm_value::JvmValue;
+use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
+use crate::share::classfile::constant_pool::CpInfo;
 
 #[cfg(test)]
 #[path = "./interpreter_test.rs"]
@@ -48,7 +49,29 @@ pub fn interpret(
                     val: read_u8(byte_codes, &mut ip) as i32,
                 }),
                 &opcode::SIPUSH => panic!("UnImplemented byte-code: SIPUSH"),
-                &opcode::LDC => panic!("UnImplemented byte-code: LDC"),
+                &opcode::LDC => {
+                    let index = read_u8(byte_codes, &mut ip);
+                    let current_class = current_frame.current_class();
+                    let referenced_cp_entry = current_class.constant_pool().get(index as usize);
+
+                    match referenced_cp_entry {
+                        CpInfo::Integer { bytes } => eval_stack.push(JvmValue::Int { val: bytes.clone() as i32 }),
+                        CpInfo::Float { bytes } => eval_stack.push(JvmValue::Float { val: bytes.clone() as f32 }),
+                        _ => {
+                            let qualifier = current_frame.current_class()
+                                .constant_pool().get_qualified_name(index as u16);
+
+                            let klass = current_frame
+                                .class_loader()
+                                .load_class(&qualifier)?;
+
+                            // eval_stack.push(JvmValue::ObjRef(ObjectRef::from(0)));
+
+                            panic!("Implement this properly!!")
+                        }
+                    }
+                    panic!("UnImplemented byte-code: DCONST_1")
+                }
                 &opcode::LDC_W => panic!("UnImplemented byte-code: LDC_W"),
                 &opcode::LDC2_W => panic!("UnImplemented byte-code: LDC2_W"),
                 &opcode::ILOAD => {
@@ -369,7 +392,6 @@ fn eval_if_cmp(byte_codes: &Vec<u8>,
                mut ip: &mut usize,
                eval_stack: &mut EvaluationStack,
                comparator: fn(i32, i32) -> bool) -> Result<(), JvmException> {
-
     let lhs = eval_stack.pop_int()?;
     let rhs = eval_stack.pop_int()?;
 

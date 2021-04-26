@@ -9,7 +9,7 @@ use crate::share::classfile::klass::Klass;
 use crate::share::classfile::method::MethodInfo;
 use crate::share::runtime::stack_frame::{JvmStackFrame, StackFrame};
 use crate::share::utilities::context::GlobalContext;
-use crate::share::utilities::global_symbols::{java_lang_Object, java_lang_String};
+use crate::share::utilities::global_symbols::{java_lang_Object, java_lang_Class};
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 use std::borrow::BorrowMut;
@@ -123,7 +123,7 @@ impl ClassLoader for BootstrapClassLoader {
 
     fn bootstrap(&self) -> Result<(), JvmException> {
         self.load_and_init_class(&*java_lang_Object)?;
-        self.load_and_init_class(&*java_lang_String)?;
+        self.load_and_init_class(&*java_lang_Class)?;
 
         Ok(())
     }
@@ -249,7 +249,7 @@ impl BootstrapClassLoader {
         class_to_prepare.initialize_static_fields();
 
         // Register bootstrap native method. Probably non-standard... Will need to check
-        class_to_prepare.register_natives();
+        class_to_prepare.register_natives(self.context.native_method_repo().as_ref());
         Ok(())
     }
 

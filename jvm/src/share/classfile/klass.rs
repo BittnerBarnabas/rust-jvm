@@ -6,6 +6,7 @@ use crate::share::classfile::klass::ClassLoadingStatus::{
 };
 use crate::share::classfile::method::MethodInfo;
 use std::sync::{Arc, Mutex};
+use crate::share::native::native_method_repo::NativeMethodRepo;
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub enum ClassLoadingStatus {
@@ -159,10 +160,13 @@ impl Klass {
             .map(|method| Arc::clone(method))
     }
 
-    pub fn register_natives(&self) {
+    pub fn register_natives(&self, native_method_repo: &NativeMethodRepo) {
         self.get_method_by_name_desc("registerNatives()V".to_string())
             .map(|method| {
-                method.set_native_method(crate::share::native::native_methods::register_natives)
+                native_method_repo.find_method(method.as_ref())
+                    .map(|native_method| {
+                        method.set_native_method(native_method)
+                    })
             });
     }
 
