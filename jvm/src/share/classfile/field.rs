@@ -28,6 +28,10 @@ impl FieldInfo {
         }
     }
 
+    pub fn matches_name_and_type(&self, name: &String, type_descriptor: &String) -> bool {
+        &self.name == name && &self.descriptor == type_descriptor
+    }
+
     pub fn is_static(&self) -> bool {
         crate::share::classfile::access_flags::flag_matches(self.access_flags, ACC_STATIC)
     }
@@ -45,7 +49,7 @@ impl FieldInfo {
 
     pub fn set_static_value(&self, value: JvmValue) {
         assert!(self.is_static());
-        *self.static_value.lock().unwrap() = Some(value)
+        self.static_value.lock().unwrap().replace(value);
     }
 
     pub fn default(&self) -> JvmValue {

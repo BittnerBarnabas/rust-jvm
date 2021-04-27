@@ -25,12 +25,18 @@ pub struct ConstantPool {
     pool: Vec<CpInfo>,
 }
 
+#[derive(Debug)]
 pub enum Qualifier {
     String {
         val: String,
     },
     Class {
         name: String,
+    },
+    FieldRef {
+        class_name: String,
+        name: String,
+        type_descriptor: String,
     },
     MethodRef {
         class_name: String,
@@ -89,15 +95,26 @@ impl ConstantPool {
                 Qualifier::String { val } => Qualifier::Class { name: val },
                 _ => Qualifier::Null,
             },
-            // CpInfo::FieldRef {
-            //     name_and_type_index,
-            //     class_index,
-            // } => {
-            //     let mut lhs = self.get_qualified_name(*class_index);
-            //     let mut rhs = self.get_qualified_name(*name_and_type_index);
-            //     lhs.append(&mut rhs);
-            //     return lhs;
-            // }
+            CpInfo::FieldRef {
+                name_and_type_index,
+                class_index,
+            } => {
+                if let Qualifier::Class { name: class_name } = self.get_qualified_name(*class_index)
+                {
+                    if let Qualifier::TypeName {
+                        name,
+                        descriptor: type_name,
+                    } = self.get_qualified_name(*name_and_type_index)
+                    {
+                        return Qualifier::FieldRef {
+                            class_name,
+                            name,
+                            type_descriptor: type_name,
+                        };
+                    }
+                }
+                Qualifier::Null
+            }
             CpInfo::MethodRef {
                 class_index,
                 name_and_type_index,

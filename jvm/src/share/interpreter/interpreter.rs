@@ -4,7 +4,7 @@ use crate::share::interpreter::opcode;
 use crate::share::runtime::stack_frame::{JvmStackFrame};
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
-use crate::share::classfile::constant_pool::CpInfo;
+use crate::share::classfile::constant_pool::{CpInfo, Qualifier};
 
 #[cfg(test)]
 #[path = "./interpreter_test.rs"]
@@ -263,7 +263,34 @@ pub fn interpret(
                 &opcode::ARETURN => panic!("UnImplemented byte-code: ARETURN"),
                 &opcode::RETURN => return Ok(JvmValue::Void {}),
                 &opcode::GETSTATIC => panic!("UnImplemented byte-code: GETSTATIC"),
-                &opcode::PUTSTATIC => panic!("UnImplemented byte-code: PUTSTATIC"),
+                &opcode::PUTSTATIC => {
+                    let index = read_u16(byte_codes, &mut ip);
+                    let qualified_name = current_frame
+                        .current_class()
+                        .constant_pool()
+                        .get_qualified_name(index);
+
+                    let value_to_assign = eval_stack.pop();
+
+                    match qualified_name {
+                        Qualifier::FieldRef { class_name, name, type_descriptor } => {
+                            let klass = current_frame
+                                .class_loader()
+                                .load_and_init_class(&class_name)?;
+
+                            klass.get_static_field_by_name_and_type(&name, &type_descriptor)
+                                .map(|static_field| static_field.set_static_value(value_to_assign))
+                                .ok_or(
+                                    JvmException::from(format!("Field not found by {:?}",
+                                                               Qualifier::FieldRef { class_name, name, type_descriptor }))
+                                )?;
+                        }
+                        invalid => Err(JvmException::from(format!("PutStatic index should refer to a field not a {:?}", invalid)))?
+                    };
+
+
+                    panic!("UnImplemented byte-code: PUTSTATIC")
+                }
                 &opcode::GETFIELD => panic!("UnImplemented byte-code: GETFIELD"),
                 &opcode::PUTFIELD => panic!("UnImplemented byte-code: PUTFIELD"),
                 &opcode::INVOKEVIRTUAL => panic!("UnImplemented byte-code: INVOKEVIRTUAL"),

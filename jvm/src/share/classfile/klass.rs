@@ -7,6 +7,7 @@ use crate::share::classfile::klass::ClassLoadingStatus::{
 use crate::share::classfile::method::MethodInfo;
 use std::sync::{Arc, Mutex};
 use crate::share::native::native_method_repo::NativeMethodRepo;
+use crate::share::parser::descriptors::FieldDescriptor;
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub enum ClassLoadingStatus {
@@ -103,6 +104,13 @@ impl Klass {
         self.static_fields
             .iter()
             .for_each(|f| f.set_static_value(f.default()))
+    }
+
+    pub fn get_static_field_by_name_and_type(&self, name: &String, type_descriptor: &String) -> Option<Arc<FieldInfo>> {
+        self.static_fields
+            .iter()
+            .find(|f| f.matches_name_and_type(name, type_descriptor))
+            .map(|f| f.clone())
     }
 
     pub fn constant_pool(&self) -> &ConstantPool {

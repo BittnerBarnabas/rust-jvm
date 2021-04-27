@@ -245,8 +245,6 @@ impl BootstrapClassLoader {
     }
 
     fn prepare_class(&self, class_to_prepare: Arc<Klass>) -> Result<(), JvmException> {
-        //initialize static fields to their default values
-        class_to_prepare.initialize_static_fields();
 
         // Register bootstrap native method. Probably non-standard... Will need to check
         class_to_prepare.register_natives(self.context.native_method_repo().as_ref());
@@ -259,8 +257,13 @@ impl BootstrapClassLoader {
             "Class should be linked before calling init!"
         );
 
-        if !class_to_init.is_initialized() {
+        //we should not just be ignoring the call in case it's being initialized in the future,
+        //what if another thread is initializing it. We should identify that case and retry this block.
+        if !class_to_init.is_initialized() && !class_to_init.is_being_initialized() {
             class_to_init.set_status(BeingInitialized);
+
+            //initialize static fields to their default values
+            class_to_init.initialize_static_fields();
 
             class_to_init
                 .get_method_by_name_desc("<clinit>()V".to_string())
