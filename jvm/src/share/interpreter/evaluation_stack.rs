@@ -1,6 +1,5 @@
 use crate::share::utilities::jvm_exception::JvmException;
-use crate::share::utilities::jvm_value::JvmValue;
-use mockall::*;
+use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
 
 #[cfg(test)]
 #[path = "./evaluation_stack_test.rs"]
@@ -10,7 +9,7 @@ pub struct EvaluationStack {
     stack: Vec<JvmValue>,
 }
 
-#[automock]
+#[cfg_attr(test, mockall::automock)]
 impl EvaluationStack {
     pub fn new() -> EvaluationStack {
         EvaluationStack { stack: Vec::new() }
@@ -32,6 +31,10 @@ impl EvaluationStack {
 
     pub fn i_constant(&mut self, constant: i32) -> () {
         self.stack.push(JvmValue::Int { val: constant })
+    }
+
+    pub fn push_a(&mut self, value: usize) -> () {
+        self.stack.push(JvmValue::ObjRef(ObjectRef::from(value)))
     }
 
     pub fn pop(&mut self) -> JvmValue {

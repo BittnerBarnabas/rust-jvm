@@ -1,6 +1,10 @@
 use crate::share::utilities::jvm_value::JvmValue;
-use mockall::*;
 
+#[cfg(test)]
+#[path = "./local_variables_test.rs"]
+mod local_variables_test;
+
+#[cfg_attr(test, mockall::automock)]
 pub trait JvmLocalVariableStore {
     fn store(&mut self, var: JvmValue, ind: u8);
     fn load(&self, ind: u8) -> JvmValue;
@@ -19,7 +23,6 @@ impl LocalVariableStore {
     }
 }
 
-#[automock]
 impl JvmLocalVariableStore for LocalVariableStore {
     fn store(&mut self, var: JvmValue, ind: u8) {
         self.store[ind as usize] = var;

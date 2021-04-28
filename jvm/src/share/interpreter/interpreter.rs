@@ -7,7 +7,7 @@ use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
 use crate::share::classfile::constant_pool::{CpInfo, Qualifier};
 
 #[cfg(test)]
-#[path = "./interpreter_test.rs"]
+#[path = "interpreter_test.rs"]
 mod interpreter_test;
 
 mod comparators {
@@ -51,15 +51,13 @@ pub fn interpret(
                 &opcode::SIPUSH => panic!("UnImplemented byte-code: SIPUSH"),
                 &opcode::LDC => {
                     let index = read_u8(byte_codes, &mut ip);
-                    let current_class = current_frame.current_class();
-                    let referenced_cp_entry = current_class.constant_pool().get(index as usize);
+                    let referenced_cp_entry = current_frame.constant_pool().get(index as usize);
 
                     match referenced_cp_entry {
                         CpInfo::Integer { bytes } => eval_stack.push(JvmValue::Int { val: bytes.clone() as i32 }),
                         CpInfo::Float { bytes } => eval_stack.push(JvmValue::Float { val: bytes.clone() as f32 }),
                         _ => {
-                            let qualifier = current_frame.current_class()
-                                .constant_pool().get_qualified_name(index as u16);
+                            let qualifier = current_frame.constant_pool().get_qualified_name(index as u16);
 
                             let klass = current_frame
                                 .class_loader()
@@ -266,7 +264,6 @@ pub fn interpret(
                 &opcode::PUTSTATIC => {
                     let index = read_u16(byte_codes, &mut ip);
                     let qualified_name = current_frame
-                        .current_class()
                         .constant_pool()
                         .get_qualified_name(index);
 
@@ -298,7 +295,6 @@ pub fn interpret(
                     let index = read_u16(byte_codes, &mut ip);
 
                     let qualified_method_name = current_frame
-                        .current_class()
                         .constant_pool()
                         .get_qualified_name(index);
 
@@ -325,7 +321,6 @@ pub fn interpret(
                     let index = read_u16(byte_codes, &mut ip);
 
                     let qualified_method_name = current_frame
-                        .current_class()
                         .constant_pool()
                         .get_qualified_name(index);
 
@@ -351,7 +346,6 @@ pub fn interpret(
                     let index = read_u16(byte_codes, &mut ip);
 
                     let qualified_klass_name = current_frame
-                        .current_class()
                         .constant_pool()
                         .get_qualified_name(index);
 
@@ -369,7 +363,6 @@ pub fn interpret(
                     let array_type_index = read_u16(byte_codes, &mut ip);
 
                     let qualified_klass_name = current_frame
-                        .current_class()
                         .constant_pool()
                         .get_qualified_name(array_type_index);
 

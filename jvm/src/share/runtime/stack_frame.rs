@@ -1,19 +1,22 @@
+use std::sync::Arc;
+
 use crate::share::classfile::class_loader::ClassLoader;
+use crate::share::classfile::constant_pool::ConstantPool;
 use crate::share::classfile::klass::Klass;
 use crate::share::classfile::method::MethodInfo;
 use crate::share::interpreter::local_variables::{JvmLocalVariableStore, LocalVariableStore};
-use crate::share::memory::heap::JvmHeap;
+use crate::share::memory::heap::Heap;
 use crate::share::native::native_methods::NativeMethodArgs;
 use crate::share::utilities::context::GlobalContext;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
-use mockall::*;
-use std::sync::Arc;
 
+#[cfg_attr(test, mockall::automock)]
 pub trait JvmStackFrame {
     fn class_loader(&self) -> Arc<dyn ClassLoader>;
-    fn heap(&self) -> Arc<JvmHeap>;
+    fn heap(&self) -> Arc<dyn Heap>;
     fn current_class(&self) -> Arc<Klass>;
+    fn constant_pool(&self) -> &ConstantPool;
     fn execute_method(
         &self,
         method: Arc<MethodInfo>,
@@ -39,18 +42,21 @@ impl<'a> StackFrame<'a> {
     }
 }
 
-#[automock]
 impl JvmStackFrame for StackFrame<'_> {
     fn class_loader(&self) -> Arc<dyn ClassLoader> {
         self.context.class_loader().clone()
     }
 
-    fn heap(&self) -> Arc<JvmHeap> {
+    fn heap(&self) -> Arc<dyn Heap> {
         self.context.heap().clone()
     }
 
     fn current_class(&self) -> Arc<Klass> {
         self.current_class.clone()
+    }
+
+    fn constant_pool(&self) -> &ConstantPool {
+        self.current_class.constant_pool()
     }
 
     fn execute_method(

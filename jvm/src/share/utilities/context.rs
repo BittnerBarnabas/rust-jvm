@@ -1,16 +1,17 @@
-use crate::share::classfile::class_loader::ClassLoader;
-use crate::share::memory::heap::JvmHeap;
 use std::sync::{Arc, RwLock};
+
+use crate::share::classfile::class_loader::ClassLoader;
+use crate::share::memory::heap::Heap;
 use crate::share::native::native_method_repo::NativeMethodRepo;
 
 pub struct GlobalContext {
-    heap: Arc<JvmHeap>,
+    heap:  Arc<dyn Heap>,
     class_loader: RwLock<Option<Arc<dyn ClassLoader>>>,
     native_method_repo: RwLock<Option<Arc<NativeMethodRepo>>>,
 }
 
 impl GlobalContext {
-    pub fn new(heap: Arc<JvmHeap>) -> GlobalContext {
+    pub fn new(heap: Arc<dyn Heap>) -> GlobalContext {
         log::trace!("Initializing GlobalContext");
         GlobalContext {
             heap,
@@ -19,7 +20,7 @@ impl GlobalContext {
         }
     }
 
-    pub fn heap(&self) -> Arc<JvmHeap> {
+    pub fn heap(&self) -> Arc<dyn Heap> {
         self.heap.clone()
     }
 
