@@ -4,7 +4,7 @@ pub struct JvmException {
 }
 
 impl JvmException {
-    pub fn new() -> JvmException {
+    fn new() -> JvmException {
         JvmException { message: None }
     }
 }

@@ -94,10 +94,10 @@ impl ClassLoader for BootstrapClassLoader {
                 assert!(klass.is_initialized() || klass.is_being_initialized());
 
                 klass
-                    .get_method_by_qualified_name(qualified_name)
-                    .ok_or(JvmException::new())
+                    .get_method_by_qualified_name(&qualified_name)
+                    .ok_or(JvmException::from(format!("Method {:?} not found on class {:?}", qualified_name, klass)))
             }
-            _ => Err(JvmException::new()),
+            _ => Err(JvmException::from(format!("Expected MethodRef but got {:?}", qualified_name))),
         }
     }
 
@@ -111,7 +111,7 @@ impl ClassLoader for BootstrapClassLoader {
     fn load_class(&self, qualified_name: &Qualifier) -> Result<Arc<Klass>, JvmException> {
         let qualified_klass_name = match qualified_name {
             Qualifier::Class { name } => name,
-            _ => return Err(JvmException::new()),
+            incorrect_qualifier => return Err(JvmException::from(format!("Expected Class, but got {:?}", incorrect_qualifier))),
         };
         self.load_class(qualified_klass_name)
     }

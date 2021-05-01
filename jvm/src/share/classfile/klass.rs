@@ -8,6 +8,7 @@ use crate::share::classfile::method::MethodInfo;
 use std::sync::{Arc, Mutex};
 use crate::share::native::native_method_repo::NativeMethodRepo;
 use crate::share::parser::descriptors::FieldDescriptor;
+use std::fmt::{Debug, Formatter};
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub enum ClassLoadingStatus {
@@ -33,6 +34,13 @@ pub struct Klass {
     attributes: Vec<AttributeInfo>,
     status: Mutex<ClassLoadingStatus>,
 }
+
+impl Debug for Klass {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.this_class)
+    }
+}
+
 
 impl Klass {
     pub fn new(
@@ -149,7 +157,7 @@ impl Klass {
 
     pub fn get_method_by_qualified_name(
         &self,
-        qualified_name: Qualifier,
+        qualified_name: &Qualifier,
     ) -> Option<Arc<MethodInfo>> {
         return match qualified_name {
             Qualifier::MethodRef {

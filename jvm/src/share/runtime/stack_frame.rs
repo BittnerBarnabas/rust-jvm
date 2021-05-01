@@ -101,7 +101,7 @@ impl JvmStackFrame for StackFrame<'_> {
                 log::trace!("Returning from byte-code method: {}", method);
                 return result;
             }
-            _ => Err(JvmException::new()),
+            _ => Err(JvmException::from(format!("No code information present for non-native method: {}", method))),
         }
     }
 }

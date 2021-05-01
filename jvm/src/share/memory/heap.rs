@@ -62,7 +62,7 @@ impl Heap for JvmHeap {
 
         let oop = guard
             .get_mut(ref_to_array.get_ref())
-            .ok_or(JvmException::new())?;
+            .ok_or(JvmException::from(format!("Could not get object lock for ref: {:?}", ref_to_array)))?;
 
         match oop {
             Oop::ArrayOop {
@@ -81,14 +81,14 @@ impl Heap for JvmHeap {
 
         let oop = guard
             .get(ref_to_array.get_ref())
-            .ok_or(JvmException::new())?;
+            .ok_or(JvmException::from(format!("Could not get object lock for ref: {:?}", ref_to_array)))?;
 
         match oop {
             Oop::ArrayOop {
                 klass: _,
                 instance_data,
             } => Ok(instance_data.len()),
-            _ => Err(JvmException::new()),
+            incorrect_oop => Err(JvmException::from(format!("ArrayOOP Expected, but got: {}", incorrect_oop))),
         }
     }
 }
