@@ -284,9 +284,6 @@ pub fn interpret(
                         }
                         invalid => Err(JvmException::from(format!("PutStatic index should refer to a field not a {:?}", invalid)))?
                     };
-
-
-                    panic!("UnImplemented byte-code: PUTSTATIC")
                 }
                 &opcode::GETFIELD => panic!("UnImplemented byte-code: GETFIELD"),
                 &opcode::PUTFIELD => panic!("UnImplemented byte-code: PUTFIELD"),

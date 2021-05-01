@@ -13,7 +13,7 @@ use crate::share::utilities::global_symbols::{java_lang_Object, java_lang_Class}
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 use std::borrow::BorrowMut;
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 use std::sync::{Arc, Mutex};
 use utils::ResultIterator;
 
@@ -55,7 +55,9 @@ impl ResourceLocator {
         let path = ResourceLocator::class_name_to_path(class_name);
         let absolute_path = format!("{}/{}", self.resource_root, path);
         log::trace!("Reading absolute file: {}", absolute_path);
-        std::fs::read(absolute_path)
+        std::fs::read(absolute_path.clone()).map_err(|err| {
+            Error::new(ErrorKind::NotFound, format!("Class file not found at: {}", absolute_path))
+        })
     }
 
     fn class_name_to_path(class_name: &String) -> String {
