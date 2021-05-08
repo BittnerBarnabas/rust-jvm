@@ -7,6 +7,7 @@ mod tests {
     use jvm::share::utilities::jvm_exception::JvmException;
 
     mod jdk;
+    mod integration;
 
     fn run_jvm(init_class_name: String) -> Result<i32, JvmException> {
         log4rs::init_file(

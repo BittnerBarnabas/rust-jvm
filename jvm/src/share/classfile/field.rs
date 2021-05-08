@@ -43,6 +43,7 @@ impl FieldInfo {
         self.static_value
             .lock()
             .unwrap()
+            .as_ref()
             .expect("Should not happen.")
             .clone()
     }

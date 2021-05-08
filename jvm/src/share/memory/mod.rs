@@ -1,2 +1,2 @@
 pub mod heap;
-pub mod jvm_object;
+pub mod oop;

@@ -1,27 +1,19 @@
-#[derive(Debug, Clone, PartialEq, Copy)]
-pub struct ObjectRef {
-    val: usize,
-}
+use crate::share::memory::oop::Oop;
+use crate::share::utilities::jvm_value::JvmValue::ObjRef;
 
-impl ObjectRef {
-    pub fn get_ref(&self) -> usize {
-        self.val.clone()
-    }
-}
-
-impl From<usize> for ObjectRef {
-    fn from(val: usize) -> Self {
-        ObjectRef { val }
-    }
+#[derive(Debug, Clone)]
+pub enum ObjectRef {
+    Null,
+    Oop(Oop),
 }
 
 impl Default for ObjectRef {
     fn default() -> Self {
-        ObjectRef::from(0)
+        ObjectRef::Null
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone)]
 pub enum JvmValue {
     Boolean { val: bool },
     Byte { val: i8 },

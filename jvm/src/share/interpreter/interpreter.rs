@@ -1,10 +1,12 @@
+use crate::share::classfile::constant_pool::{CpInfo, Qualifier};
 use crate::share::interpreter::evaluation_stack::EvaluationStack;
 use crate::share::interpreter::local_variables::JvmLocalVariableStore;
 use crate::share::interpreter::opcode;
-use crate::share::runtime::stack_frame::{JvmStackFrame};
+use crate::share::runtime::stack_frame::JvmStackFrame;
+use crate::share::utilities::global_symbols::java_lang_String;
 use crate::share::utilities::jvm_exception::JvmException;
-use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
-use crate::share::classfile::constant_pool::{CpInfo, Qualifier};
+use crate::share::utilities::jvm_value::JvmValue;
+use crate::share::utilities::jvm_value::JvmValue::ObjRef;
 
 #[cfg(test)]
 #[path = "interpreter_test.rs"]
@@ -30,7 +32,7 @@ pub fn interpret(
         match byte_codes.get(ip) {
             Some(byte_code) => match byte_code {
                 &opcode::NOP => {}
-                &opcode::ACONST_NULL => panic!("UnImplemented byte-code: ACONST_NULL"),
+                &opcode::ACONST_NULL => eval_stack.push(JvmValue::null_obj()),
                 &opcode::ICONST_M1 => eval_stack.i_constant(-1),
                 &opcode::ICONST_0 => eval_stack.i_constant(0),
                 &opcode::ICONST_1 => eval_stack.i_constant(1),
@@ -56,6 +58,13 @@ pub fn interpret(
                     match referenced_cp_entry {
                         CpInfo::Integer { bytes } => eval_stack.push(JvmValue::Int { val: bytes.clone() as i32 }),
                         CpInfo::Float { bytes } => eval_stack.push(JvmValue::Float { val: bytes.clone() as f32 }),
+                        CpInfo::String { string_index } => {
+                            let string_klass = current_frame.class_loader()
+                                .load_and_init_class(&java_lang_String)?;
+
+                            let string_ref = current_frame.heap()
+                                .allocate_object(string_klass)?;
+                        }
                         _ => {
                             let qualifier = current_frame.constant_pool().get_qualified_name(index as u16);
 
@@ -103,7 +112,18 @@ pub fn interpret(
                 &opcode::LALOAD => panic!("UnImplemented byte-code: LALOAD"),
                 &opcode::FALOAD => panic!("UnImplemented byte-code: FALOAD"),
                 &opcode::DALOAD => panic!("UnImplemented byte-code: DALOAD"),
-                &opcode::AALOAD => panic!("UnImplemented byte-code: AALOAD"),
+                &opcode::AALOAD => {
+                    let index = eval_stack.pop_int()?;
+                    if let JvmValue::ObjRef(array_ref) = eval_stack.pop() {
+                        let object_ref = current_frame.heap().load_from_array(array_ref, index)?;
+
+                        eval_stack.push(object_ref);
+                    } else {
+                        return Err(JvmException::from(
+                            "Non-object ref value was found on top of stack when executing AALOAD",
+                        ));
+                    }
+                }
                 &opcode::BALOAD => panic!("UnImplemented byte-code: BALOAD"),
                 &opcode::CALOAD => panic!("UnImplemented byte-code: CALOAD"),
                 &opcode::SALOAD => panic!("UnImplemented byte-code: SALOAD"),
@@ -145,7 +165,7 @@ pub fn interpret(
                         //do a lots of checks here
                         current_frame
                             .heap()
-                            .store_in_array(array_ref, index as usize, value)?;
+                            .store_in_array(array_ref, index, value)?;
                     } else {
                         return Err(JvmException::from("Stack should contain a Reference."));
                     }
@@ -174,7 +194,7 @@ pub fn interpret(
                 &opcode::LSUB => panic!("UnImplemented byte-code: LSUB"),
                 &opcode::FSUB => panic!("UnImplemented byte-code: FSUB"),
                 &opcode::DSUB => panic!("UnImplemented byte-code: DSUB"),
-                &opcode::IMUL => panic!("UnImplemented byte-code: IMUL"),
+                &opcode::IMUL => eval_stack.mul(),
                 &opcode::LMUL => panic!("UnImplemented byte-code: LMUL"),
                 &opcode::FMUL => panic!("UnImplemented byte-code: FMUL"),
                 &opcode::DMUL => panic!("UnImplemented byte-code: DMUL"),
@@ -230,7 +250,7 @@ pub fn interpret(
                 &opcode::IFGT => eval_if(byte_codes, &mut ip, &mut eval_stack, comparators::GT)?,
                 &opcode::IFLE => eval_if(byte_codes, &mut ip, &mut eval_stack, comparators::LE)?,
                 &opcode::IF_ICMPEQ => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::EQ)?,
-                &opcode::IF_ICMPNE => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::LE)?,
+                &opcode::IF_ICMPNE => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::NEQ)?,
                 &opcode::IF_ICMPLT => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::LT)?,
                 &opcode::IF_ICMPGE => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::GE)?,
                 &opcode::IF_ICMPGT => eval_if_cmp(byte_codes, &mut ip, &mut eval_stack, comparators::GT)?,
@@ -282,11 +302,73 @@ pub fn interpret(
                                                                Qualifier::FieldRef { class_name, name, type_descriptor }))
                                 )?;
                         }
-                        invalid => Err(JvmException::from(format!("PutStatic index should refer to a field not a {:?}", invalid)))?
+                        invalid => Err(JvmException::from(format!("PutField index should refer to a field not a {:?}", invalid)))?
                     };
                 }
-                &opcode::GETFIELD => panic!("UnImplemented byte-code: GETFIELD"),
-                &opcode::PUTFIELD => panic!("UnImplemented byte-code: PUTFIELD"),
+                &opcode::GETFIELD => {
+                    let index = read_u16(byte_codes, &mut ip);
+                    let qualified_name = current_frame
+                        .constant_pool()
+                        .get_qualified_name(index);
+
+                    let object_to_modify = eval_stack.pop();
+
+                    match qualified_name {
+                        Qualifier::FieldRef { class_name, name, type_descriptor } => {
+                            let klass = current_frame
+                                .class_loader()
+                                .load_and_init_class(&class_name)?;
+
+                            let field_value = klass.get_instance_field_offset(&name, &type_descriptor)
+                                .map(|field_offset| {
+                                    if let JvmValue::ObjRef(object_ref) = object_to_modify {
+                                        //do a lots of checks here
+                                        Ok(current_frame.heap().load_object_field(object_ref, field_offset)?)
+                                    } else {
+                                        Err(JvmException::from(format!("Stack should contain a Reference to an Object, but was {:?}", object_to_modify)))
+                                    }
+                                })
+                                .ok_or(
+                                    JvmException::from(format!("Field not found by {:?}",
+                                                               Qualifier::FieldRef { class_name, name, type_descriptor }))
+                                )??;
+                            eval_stack.push(field_value);
+                        }
+                        invalid => return Err(JvmException::from(format!("GetField index should refer to a field not a {:?}", invalid)))
+                    }
+                },
+                &opcode::PUTFIELD => {
+                    let index = read_u16(byte_codes, &mut ip);
+                    let qualified_name = current_frame
+                        .constant_pool()
+                        .get_qualified_name(index);
+
+                    let value_to_assign = eval_stack.pop();
+                    let object_to_modify = eval_stack.pop();
+
+                    match qualified_name {
+                        Qualifier::FieldRef { class_name, name, type_descriptor } => {
+                            let klass = current_frame
+                                .class_loader()
+                                .load_and_init_class(&class_name)?;
+                            klass.get_instance_field_offset(&name, &type_descriptor)
+                                .map(|field_offset| {
+                                    if let JvmValue::ObjRef(object_ref) = object_to_modify {
+                                        //do a lots of checks here
+                                        current_frame.heap().put_object_field(object_ref, field_offset, value_to_assign)?;
+                                        Ok(())
+                                    } else {
+                                        Err(JvmException::from(format!("Stack should contain a Reference to an Object, but was {:?}", object_to_modify)))
+                                    }
+                                })
+                                .ok_or(
+                                    JvmException::from(format!("Field not found by {:?}",
+                                                               Qualifier::FieldRef { class_name, name, type_descriptor }))
+                                )??;
+                        }
+                        invalid => return Err(JvmException::from(format!("PutStatic index should refer to a field not a {:?}", invalid)))
+                    }
+                }
                 &opcode::INVOKEVIRTUAL => panic!("UnImplemented byte-code: INVOKEVIRTUAL"),
                 &opcode::INVOKESPECIAL => {
                     let index = read_u16(byte_codes, &mut ip);
@@ -300,12 +382,9 @@ pub fn interpret(
                         .lookup_instance_method(qualified_method_name)?;
 
                     let number_of_parameters = method_to_call.number_of_parameters() + 1;
-                    let mut args: Vec<JvmValue> = Vec::with_capacity(number_of_parameters as usize);
-                    for i in number_of_parameters..0 {
-                        args.insert(i as usize, eval_stack.pop());
-                    }
-                    //passing in this as 0th arg.
-                    args.insert(0, eval_stack.pop());
+
+                    let mut args: Vec<JvmValue> = (0..number_of_parameters).map(|_| eval_stack.pop()).collect();
+                    args.reverse();
 
                     let void_method = method_to_call.is_void();
                     let method_return_value = current_frame.execute_method(method_to_call, args)?;
@@ -350,7 +429,7 @@ pub fn interpret(
                         .class_loader()
                         .load_class(&qualified_klass_name)?;
 
-                    let obj_ref = current_frame.heap().store_object(klass)?;
+                    let obj_ref = current_frame.heap().allocate_object(klass)?;
 
                     eval_stack.push(obj_ref);
                 }
@@ -367,7 +446,7 @@ pub fn interpret(
                         .class_loader()
                         .load_class(&qualified_klass_name)?;
 
-                    let array_ref = current_frame.heap().store_array(klass, array_size)?;
+                    let array_ref = current_frame.heap().allocate_array(klass, array_size)?;
                     eval_stack.push(array_ref);
                 }
                 &opcode::ARRAYLENGTH => {
@@ -375,7 +454,7 @@ pub fn interpret(
                         //do a lots of checks here
                         let array_length = current_frame.heap().array_length(array_ref)?;
                         eval_stack.push(JvmValue::Int {
-                            val: array_length as i32,
+                            val: array_length,
                         })
                     } else {
                         return Err(JvmException::from("Stack should contain a Reference."));

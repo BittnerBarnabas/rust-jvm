@@ -4,10 +4,10 @@ use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
 
 #[test]
 pub fn push_and_then_pop() {
-    let value_1 = JvmValue::ObjRef(ObjectRef::from(1));
-    let value_2 = JvmValue::ObjRef(ObjectRef::from(2));
-    let expected_value_1 = JvmValue::ObjRef(ObjectRef::from(2));
-    let expected_value_2 = JvmValue::ObjRef(ObjectRef::from(1));
+    let value_1 = JvmValue::Int { val: 1 };
+    let value_2 = JvmValue::Int { val: 2 };
+    let expected_value_1 = JvmValue::Int { val: 2 };
+    let expected_value_2 = JvmValue::Int { val: 1 };
 
     let mut stack_under_test = EvaluationStack::new();
 
@@ -41,9 +41,9 @@ pub fn pop_i_constants() {
 #[test]
 pub fn pop_i_constants_not_int_in_stack() {
     let mut stack_under_test = EvaluationStack::new();
-    stack_under_test.push(JvmValue::ObjRef(ObjectRef::from(1)));
+    stack_under_test.push(JvmValue::Double { val: 1.0 });
 
-    assert_eq!(Err(JvmException::from("JvmValue::Int expected but got: ObjRef(ObjectRef { val: 1 })")), stack_under_test.pop_int());
+    assert_eq!(Err(JvmException::from("JvmValue::Int expected but got: Double { val: 1.0 }")), stack_under_test.pop_int());
 }
 
 #[test]

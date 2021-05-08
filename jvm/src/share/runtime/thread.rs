@@ -49,10 +49,11 @@ impl MainJavaThread {
         log::trace!("Executing main method of init class: {}", init_class_name);
 
         let frame = StackFrame::new(&context, init_class.clone());
-        if let JvmValue::Int { val } = frame.execute_method(main_method, Vec::new())? {
-            Ok(val)
-        } else {
-            Err(JvmException::from("Main method didn't return int!"))
+
+        match frame.execute_method(main_method, Vec::new())? {
+            JvmValue::Int { val } => Ok(val),
+            JvmValue::Void { .. } => Ok(0),
+            invalid_value => Err(JvmException::from(format!("Main method didn't return int, but: {:?}", invalid_value)))
         }
     }
 }

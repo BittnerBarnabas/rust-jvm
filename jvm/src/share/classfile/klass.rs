@@ -121,6 +121,15 @@ impl Klass {
             .map(|f| f.clone())
     }
 
+    pub fn get_instance_field_offset(&self, name: &String, type_descriptor: &String) -> Option<usize> {
+        for i in 0..self.instance_fields.len() {
+            if self.instance_fields[i].matches_name_and_type(name, type_descriptor) {
+                return Some(i);
+            }
+        }
+        None
+    }
+
     pub fn constant_pool(&self) -> &ConstantPool {
         &self.constant_pool
     }

@@ -90,7 +90,7 @@ impl JvmStackFrame for StackFrame<'_> {
                     LocalVariableStore::new(code_info.local_variables() as usize);
 
                 for i in 0..args.len() {
-                    local_variables.store(*args.get(i).expect("Should not happen."), i as u8)
+                    local_variables.store(args.get(i).expect("Should not happen.").clone(), i as u8)
                 }
 
                 let result = crate::share::interpreter::interpreter::interpret(
