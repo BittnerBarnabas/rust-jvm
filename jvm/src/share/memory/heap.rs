@@ -1,14 +1,14 @@
 use crate::share::classfile::klass::Klass;
 use crate::share::memory::oop::Oop;
 use crate::share::utilities::jvm_exception::JvmException;
-use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
+use crate::share::utilities::jvm_value::{JvmValue, ObjectRef, PrimitiveType};
 use std::sync::{Arc, Mutex, RwLock};
 use std::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
 use crate::share::utilities::jvm_value::JvmValue::ObjRef;
 use std::iter::Map;
 use std::collections::HashMap;
-use crate::share::memory::oop::Oop::{ObjectOop, ArrayOop};
+use crate::share::memory::oop::Oop::{ObjectOop, ArrayOop, PrimitiveArrayOop};
 use std::ops::Deref;
 
 
@@ -18,6 +18,7 @@ pub trait Heap: Send + Sync {
     fn put_object_field(&self, ref_to_object: ObjectRef, field_offset: usize, value: JvmValue) -> Result<(), JvmException>;
     fn load_object_field(&self, ref_to_object: ObjectRef, field_offset: usize) -> Result<JvmValue, JvmException>;
     fn allocate_array(&self, klass: Arc<Klass>, size: i32) -> Result<JvmValue, JvmException>;
+    fn allocate_primitive_array(&self, primitive_type: PrimitiveType, size: i32) -> Result<JvmValue, JvmException>;
     fn store_in_array(&self, ref_to_array: ObjectRef, index: i32, value: JvmValue) -> Result<(), JvmException>;
     fn load_from_array(&self, ref_to_array: ObjectRef, index: i32) -> Result<JvmValue, JvmException>;
     fn array_length(&self, ref_to_array: ObjectRef) -> Result<i32, JvmException>;
@@ -51,13 +52,25 @@ impl JvmHeap {
         HeapWord::new(instance_data)
     }
 
-    fn build_array(klass: Arc<Klass>, size: i32) -> HeapWord {
+    fn allocate_obj_array(klass: Arc<Klass>, size: i32) -> HeapWord {
         assert!(
             size >= 0,
             "Cannot build array OOP with negative size! {}",
             size
         );
-        let instance_data: Vec<JvmValue> = (0..size).map(|_| JvmValue::null_obj()).collect();
+        let instance_data = vec![JvmValue::null_obj(); size as usize];
+
+        HeapWord::new(instance_data)
+    }
+
+    fn allocate_primitive_array(primitive_type: PrimitiveType, size: i32) -> HeapWord {
+        assert!(
+            size >= 0,
+            "Cannot build array OOP with negative size! {}",
+            size
+        );
+
+        let instance_data = vec![JvmValue::from(primitive_type); size as usize];
 
         HeapWord::new(instance_data)
     }
@@ -107,6 +120,7 @@ impl Heap for JvmHeap {
 
                         JvmHeap::set_field(oop, field_offset, value)
                     }
+                    Oop::PrimitiveArrayOop { .. } => Err(JvmException::from("ref_to_array was PrimitiveArrayOop!"))
                 }
             }
         }
@@ -131,12 +145,26 @@ impl Heap for JvmHeap {
     }
 
     fn allocate_array(&self, klass: Arc<Klass>, size: i32) -> Result<JvmValue, JvmException> {
-        let new_obj = JvmHeap::build_array(klass.clone(), size.clone());
+        let new_obj = JvmHeap::allocate_obj_array(klass.clone(), size.clone());
         self.store(new_obj.clone())?;
         Ok(
             ObjRef(ObjectRef::Oop(
                 ArrayOop {
                     klass,
+                    size,
+                    instance_data: new_obj,
+                }
+            ))
+        )
+    }
+
+    fn allocate_primitive_array(&self, primitive_type: PrimitiveType, size: i32) -> Result<JvmValue, JvmException> {
+        let new_obj = JvmHeap::allocate_primitive_array(primitive_type.clone(), size.clone());
+        self.store(new_obj.clone())?;
+        Ok(
+            ObjRef(ObjectRef::Oop(
+                PrimitiveArrayOop {
+                    inner_type: primitive_type,
                     size,
                     instance_data: new_obj,
                 }

@@ -1,4 +1,4 @@
-use crate::share::utilities::jvm_value::JvmValue;
+use crate::share::utilities::jvm_value::{JvmValue, PrimitiveType};
 use std::sync::{Arc, Mutex};
 use crate::share::classfile::klass::Klass;
 use crate::share::utilities::jvm_exception::JvmException;
@@ -19,6 +19,11 @@ pub enum Oop {
         size: i32,
         instance_data: HeapWord,
     },
+    PrimitiveArrayOop {
+        inner_type: PrimitiveType,
+        size: i32,
+        instance_data: HeapWord,
+    }
 }
 
 impl Oop {
@@ -29,7 +34,10 @@ impl Oop {
             }
             Oop::ArrayOop { instance_data, .. } => {
                 instance_data.clone()
-            }
+            },
+            Oop::PrimitiveArrayOop { instance_data, .. } => {
+                instance_data.clone()
+            },
         }
     }
 }

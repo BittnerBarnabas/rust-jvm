@@ -1,4 +1,5 @@
 pub mod native_method_repo;
 pub mod native_methods;
-mod class;
-mod object;
+pub mod class;
+pub mod object;
+pub mod string;

@@ -5,7 +5,7 @@ use crate::share::interpreter::opcode;
 use crate::share::runtime::stack_frame::JvmStackFrame;
 use crate::share::utilities::global_symbols::java_lang_String;
 use crate::share::utilities::jvm_exception::JvmException;
-use crate::share::utilities::jvm_value::JvmValue;
+use crate::share::utilities::jvm_value::{JvmValue, PrimitiveType};
 use crate::share::utilities::jvm_value::JvmValue::ObjRef;
 
 #[cfg(test)]
@@ -64,6 +64,19 @@ pub fn interpret(
 
                             let string_ref = current_frame.heap()
                                 .allocate_object(string_klass)?;
+
+                            let string_contents = current_frame.constant_pool().get_utf8(string_index.clone() as usize)
+                                .map(|str| str.into_bytes())
+                                .expect("No String reference was found!");
+
+                            if let byte_array_ref = match
+                            current_frame.heap()
+                                .allocate_primitive_array(PrimitiveType::Byte, string_contents.len() as i32)? {
+                                ObjRef() => {}
+                            }
+
+
+
                         }
                         _ => {
                             let qualifier = current_frame.constant_pool().get_qualified_name(index as u16);
@@ -77,7 +90,6 @@ pub fn interpret(
                             panic!("Implement this properly!!")
                         }
                     }
-                    panic!("UnImplemented byte-code: DCONST_1")
                 }
                 &opcode::LDC_W => panic!("UnImplemented byte-code: LDC_W"),
                 &opcode::LDC2_W => panic!("UnImplemented byte-code: LDC2_W"),
