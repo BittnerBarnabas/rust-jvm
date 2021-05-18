@@ -1,10 +1,20 @@
 use crate::share::memory::oop::Oop;
+use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue::ObjRef;
 
 #[derive(Debug, Clone)]
 pub enum ObjectRef {
     Null,
     Oop(Oop),
+}
+
+impl ObjectRef {
+    pub fn dereference(&self) -> Result<Oop, JvmException> {
+        match self {
+            ObjectRef::Null => Err(JvmException::from("NPE!!!")),
+            ObjectRef::Oop(oop) => Ok(oop.clone())
+        }
+    }
 }
 
 impl Default for ObjectRef {
@@ -31,6 +41,12 @@ pub enum JvmValue {
 impl JvmValue {
     pub fn null_obj() -> JvmValue {
         JvmValue::ObjRef(ObjectRef::default())
+    }
+}
+
+impl From<Oop> for JvmValue {
+    fn from(oop: Oop) -> Self {
+        JvmValue::ObjRef(ObjectRef::Oop(oop))
     }
 }
 

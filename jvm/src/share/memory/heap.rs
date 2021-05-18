@@ -1,27 +1,27 @@
-use crate::share::classfile::klass::Klass;
-use crate::share::memory::oop::Oop;
-use crate::share::utilities::jvm_exception::JvmException;
-use crate::share::utilities::jvm_value::{JvmValue, ObjectRef, PrimitiveType};
+use core::sync::atomic::Ordering;
+use std::collections::HashMap;
+use std::iter::Map;
+use std::ops::Deref;
 use std::sync::{Arc, Mutex, RwLock};
 use std::sync::atomic::AtomicUsize;
-use core::sync::atomic::Ordering;
-use crate::share::utilities::jvm_value::JvmValue::ObjRef;
-use std::iter::Map;
-use std::collections::HashMap;
-use crate::share::memory::oop::Oop::{ObjectOop, ArrayOop, PrimitiveArrayOop};
-use std::ops::Deref;
 
+use crate::share::classfile::klass::Klass;
+use crate::share::memory::oop::Oop;
+use crate::share::memory::oop::Oop::{ArrayOop, ObjectOop, PrimitiveArrayOop};
+use crate::share::utilities::jvm_exception::JvmException;
+use crate::share::utilities::jvm_value::{JvmValue, ObjectRef, PrimitiveType};
+use crate::share::utilities::jvm_value::JvmValue::ObjRef;
 
 #[cfg_attr(test, mockall::automock)]
 pub trait Heap: Send + Sync {
-    fn allocate_object(&self, klass: Arc<Klass>) -> Result<JvmValue, JvmException>;
-    fn put_object_field(&self, ref_to_object: ObjectRef, field_offset: usize, value: JvmValue) -> Result<(), JvmException>;
-    fn load_object_field(&self, ref_to_object: ObjectRef, field_offset: usize) -> Result<JvmValue, JvmException>;
-    fn allocate_array(&self, klass: Arc<Klass>, size: i32) -> Result<JvmValue, JvmException>;
-    fn allocate_primitive_array(&self, primitive_type: PrimitiveType, size: i32) -> Result<JvmValue, JvmException>;
-    fn store_in_array(&self, ref_to_array: ObjectRef, index: i32, value: JvmValue) -> Result<(), JvmException>;
-    fn load_from_array(&self, ref_to_array: ObjectRef, index: i32) -> Result<JvmValue, JvmException>;
-    fn array_length(&self, ref_to_array: ObjectRef) -> Result<i32, JvmException>;
+    fn allocate_object(&self, klass: Arc<Klass>) -> Result<Oop, JvmException>;
+    fn put_object_field(&self, ref_to_object: Oop, field_offset: usize, value: JvmValue) -> Result<(), JvmException>;
+    fn load_object_field(&self, ref_to_object: Oop, field_offset: usize) -> Result<JvmValue, JvmException>;
+    fn allocate_array(&self, klass: Arc<Klass>, size: i32) -> Result<Oop, JvmException>;
+    fn allocate_primitive_array(&self, primitive_type: PrimitiveType, size: i32) -> Result<Oop, JvmException>;
+    fn store_in_array(&self, array_oop: Oop, index: i32, value: JvmValue) -> Result<(), JvmException>;
+    fn load_from_array(&self, array_oop: Oop, index: i32) -> Result<JvmValue, JvmException>;
+    fn array_length(&self, array_oop: Oop) -> Result<i32, JvmException>;
 }
 
 pub struct JvmHeap {
@@ -86,146 +86,108 @@ impl JvmHeap {
 }
 
 impl Heap for JvmHeap {
-    fn allocate_object(&self, klass: Arc<Klass>) -> Result<JvmValue, JvmException> {
+    fn allocate_object(&self, klass: Arc<Klass>) -> Result<Oop, JvmException> {
         let new_obj = JvmHeap::build_default_object(klass.clone());
         self.store(new_obj.clone())?;
         Ok(
-            ObjRef(ObjectRef::Oop(ObjectOop {
+            ObjectOop {
                 klass,
                 instance_data: new_obj,
-            }))
+            }
         )
     }
 
-    fn put_object_field(&self, ref_to_object: ObjectRef, field_offset: usize, value: JvmValue) -> Result<(), JvmException> {
+    fn put_object_field(&self, ref_to_object: Oop, field_offset: usize, value: JvmValue) -> Result<(), JvmException> {
         match ref_to_object {
-            ObjectRef::Null => Err(JvmException::from("ref_to_array was null! NPE")),
-            ObjectRef::Oop(oop) => {
-                match oop {
-                    Oop::ObjectOop { instance_data, .. } => {
-                        let mut guard = self.heap.lock().unwrap();
-
-                        let oop = guard
-                            .get(&instance_data.key())
-                            .ok_or(JvmException::from(format!("Could not get object lock for ref: {:?}", instance_data)))?;
-
-                        JvmHeap::set_field(oop, field_offset, value)
-                    }
-                    Oop::ArrayOop { instance_data, size, .. } => {
-                        let mut guard = self.heap.lock().unwrap();
-
-                        let oop = guard
-                            .get(&instance_data.key())
-                            .ok_or(JvmException::from(format!("Could not get object lock for array-ref: {:?}", instance_data)))?;
-
-                        JvmHeap::set_field(oop, field_offset, value)
-                    }
-                    Oop::PrimitiveArrayOop { .. } => Err(JvmException::from("ref_to_array was PrimitiveArrayOop!"))
-                }
-            }
-        }
-    }
-
-    fn load_object_field(&self, ref_to_object: ObjectRef, field_offset: usize) -> Result<JvmValue, JvmException> {
-        match &ref_to_object {
-            ObjectRef::Null => {
-                Err(JvmException::from("ref_to_array was null! NPE"))
-            }
-            ObjectRef::Oop(obj_oop) => {
+            Oop::ObjectOop { instance_data, .. } => {
                 let mut guard = self.heap.lock().unwrap();
 
-                let heap_word = obj_oop.instance_data();
                 let oop = guard
-                    .get(&heap_word.key())
-                    .ok_or(JvmException::from(format!("Could not get object lock for ref: {:?}", ref_to_object)))?;
+                    .get(&instance_data.key())
+                    .ok_or(JvmException::from(format!("Could not get object lock for ref: {:?}", instance_data)))?;
 
-                JvmHeap::get_field(oop, field_offset)
+                JvmHeap::set_field(oop, field_offset, value)
             }
+            Oop::ArrayOop { instance_data, .. } => {
+                let mut guard = self.heap.lock().unwrap();
+
+                let oop = guard
+                    .get(&instance_data.key())
+                    .ok_or(JvmException::from(format!("Could not get object lock for array-ref: {:?}", instance_data)))?;
+
+                JvmHeap::set_field(oop, field_offset, value)
+            }
+            Oop::PrimitiveArrayOop { .. } => Err(JvmException::from("ref_to_array was PrimitiveArrayOop!"))
         }
     }
 
-    fn allocate_array(&self, klass: Arc<Klass>, size: i32) -> Result<JvmValue, JvmException> {
+    fn load_object_field(&self, ref_to_object: Oop, field_offset: usize) -> Result<JvmValue, JvmException> {
+        let mut guard = self.heap.lock().unwrap();
+        let heap_word = ref_to_object.instance_data();
+        let oop = guard
+            .get(&heap_word.key())
+            .ok_or(JvmException::from(format!("Could not get object lock for ref: {:?}", ref_to_object)))?;
+
+        JvmHeap::get_field(oop, field_offset)
+    }
+
+    fn allocate_array(&self, klass: Arc<Klass>, size: i32) -> Result<Oop, JvmException> {
         let new_obj = JvmHeap::allocate_obj_array(klass.clone(), size.clone());
         self.store(new_obj.clone())?;
         Ok(
-            ObjRef(ObjectRef::Oop(
-                ArrayOop {
-                    klass,
-                    size,
-                    instance_data: new_obj,
-                }
-            ))
+            ArrayOop {
+                klass,
+                size,
+                instance_data: new_obj,
+            }
         )
     }
 
-    fn allocate_primitive_array(&self, primitive_type: PrimitiveType, size: i32) -> Result<JvmValue, JvmException> {
+    fn allocate_primitive_array(&self, primitive_type: PrimitiveType, size: i32) -> Result<Oop, JvmException> {
         let new_obj = JvmHeap::allocate_primitive_array(primitive_type.clone(), size.clone());
         self.store(new_obj.clone())?;
         Ok(
-            ObjRef(ObjectRef::Oop(
-                PrimitiveArrayOop {
-                    inner_type: primitive_type,
-                    size,
-                    instance_data: new_obj,
-                }
-            ))
+            PrimitiveArrayOop {
+                inner_type: primitive_type,
+                size,
+                instance_data: new_obj,
+            }
         )
     }
 
     fn store_in_array(
         &self,
-        ref_to_array: ObjectRef,
+        array_oop: Oop,
         index: i32,
         value: JvmValue,
     ) -> Result<(), JvmException> {
-        match &ref_to_array {
-            ObjectRef::Null => {
-                Err(JvmException::from("ref_to_array was null! NPE"))
-            }
-            ObjectRef::Oop(array_oop) => {
-                let mut guard = self.heap.lock().unwrap();
+        let mut guard = self.heap.lock().unwrap();
 
-                let heap_word = array_oop.instance_data();
-                let oop = guard
-                    .get(&heap_word.key())
-                    .ok_or(JvmException::from(format!("Could not get object lock for ref: {:?}", ref_to_array)))?;
+        let heap_word = array_oop.instance_data();
+        let oop = guard
+            .get(&heap_word.key())
+            .ok_or(JvmException::from(format!("Could not get object lock for ref: {:?}", array_oop)))?;
 
-                JvmHeap::set_field(oop, index as usize, value)
-            }
-        }
+        JvmHeap::set_field(oop, index as usize, value)
     }
 
-    fn load_from_array(&self, ref_to_array: ObjectRef, index: i32) -> Result<JvmValue, JvmException> {
-        match &ref_to_array {
-            ObjectRef::Null => {
-                Err(JvmException::from("ref_to_array was null! NPE"))
-            }
-            ObjectRef::Oop(array_oop) => {
-                let mut guard = self.heap.lock().unwrap();
+    fn load_from_array(&self, array_oop: Oop, index: i32) -> Result<JvmValue, JvmException> {
+        let mut guard = self.heap.lock().unwrap();
 
-                let heap_word = array_oop.instance_data();
-                let oop = guard
-                    .get(&heap_word.key())
-                    .ok_or(JvmException::from(format!("Could not get object lock for ref: {:?}", ref_to_array)))?;
+        let heap_word = array_oop.instance_data();
+        let oop = guard
+            .get(&heap_word.key())
+            .ok_or(JvmException::from(format!("Could not get object lock for ref: {:?}", array_oop)))?;
 
-                JvmHeap::get_field(oop, index as usize)
-            }
-        }
+        JvmHeap::get_field(oop, index as usize)
     }
 
-    fn array_length(&self, ref_to_array: ObjectRef) -> Result<i32, JvmException> {
-        match ref_to_array {
-            ObjectRef::Null => {
-                Err(JvmException::from("ref_to_array was null! NPE"))
-            }
-            ObjectRef::Oop(oop) => {
-                match oop {
-                    Oop::ArrayOop {
-                        size, ..
-                    } => Ok(size),
-                    incorrect_oop => Err(JvmException::from(format!("ArrayOOP Expected, but got: {:?}", incorrect_oop))),
-                }
-            }
+    fn array_length(&self, array_oop: Oop) -> Result<i32, JvmException> {
+        match array_oop {
+            Oop::ArrayOop {
+                size, ..
+            } => Ok(size),
+            incorrect_oop => Err(JvmException::from(format!("ArrayOOP Expected, but got: {:?}", incorrect_oop))),
         }
     }
 }
