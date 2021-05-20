@@ -7,18 +7,19 @@ use std::sync::atomic::AtomicUsize;
 
 use crate::share::classfile::klass::Klass;
 use crate::share::memory::oop::Oop;
-use crate::share::memory::oop::Oop::{ArrayOop, ObjectOop, PrimitiveArrayOop};
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::{JvmValue, ObjectRef, PrimitiveType};
 use crate::share::utilities::jvm_value::JvmValue::ObjRef;
+use crate::share::memory::oop::oops::{PrimitiveArrayOopDesc, ObjectOopDesc, ArrayOopDesc};
+use crate::share::memory::oop::Oop::{ArrayOop, PrimitiveArrayOop, ObjectOop};
 
 #[cfg_attr(test, mockall::automock)]
 pub trait Heap: Send + Sync {
-    fn allocate_object(&self, klass: Arc<Klass>) -> Result<Oop, JvmException>;
+    fn allocate_object(&self, klass: Arc<Klass>) -> Result<ObjectOopDesc, JvmException>;
     fn put_object_field(&self, ref_to_object: Oop, field_offset: usize, value: JvmValue) -> Result<(), JvmException>;
     fn load_object_field(&self, ref_to_object: Oop, field_offset: usize) -> Result<JvmValue, JvmException>;
-    fn allocate_array(&self, klass: Arc<Klass>, size: i32) -> Result<Oop, JvmException>;
-    fn allocate_primitive_array(&self, primitive_type: PrimitiveType, size: i32) -> Result<Oop, JvmException>;
+    fn allocate_array(&self, klass: Arc<Klass>, size: i32) -> Result<ArrayOopDesc, JvmException>;
+    fn allocate_primitive_array(&self, primitive_type: PrimitiveType, size: i32) -> Result<PrimitiveArrayOopDesc, JvmException>;
     fn store_in_array(&self, array_oop: Oop, index: i32, value: JvmValue) -> Result<(), JvmException>;
     fn load_from_array(&self, array_oop: Oop, index: i32) -> Result<JvmValue, JvmException>;
     fn array_length(&self, array_oop: Oop) -> Result<i32, JvmException>;
@@ -86,11 +87,11 @@ impl JvmHeap {
 }
 
 impl Heap for JvmHeap {
-    fn allocate_object(&self, klass: Arc<Klass>) -> Result<Oop, JvmException> {
+    fn allocate_object(&self, klass: Arc<Klass>) -> Result<ObjectOopDesc, JvmException> {
         let new_obj = JvmHeap::build_default_object(klass.clone());
         self.store(new_obj.clone())?;
         Ok(
-            ObjectOop {
+            ObjectOopDesc {
                 klass,
                 instance_data: new_obj,
             }
@@ -99,7 +100,7 @@ impl Heap for JvmHeap {
 
     fn put_object_field(&self, ref_to_object: Oop, field_offset: usize, value: JvmValue) -> Result<(), JvmException> {
         match ref_to_object {
-            Oop::ObjectOop { instance_data, .. } => {
+            ObjectOop(ObjectOopDesc { instance_data, .. }) => {
                 let mut guard = self.heap.lock().unwrap();
 
                 let oop = guard
@@ -108,7 +109,7 @@ impl Heap for JvmHeap {
 
                 JvmHeap::set_field(oop, field_offset, value)
             }
-            Oop::ArrayOop { instance_data, .. } => {
+            ArrayOop(ArrayOopDesc { instance_data, .. }) => {
                 let mut guard = self.heap.lock().unwrap();
 
                 let oop = guard
@@ -117,7 +118,7 @@ impl Heap for JvmHeap {
 
                 JvmHeap::set_field(oop, field_offset, value)
             }
-            Oop::PrimitiveArrayOop { .. } => Err(JvmException::from("ref_to_array was PrimitiveArrayOop!"))
+            PrimitiveArrayOop(..) => Err(JvmException::from("ref_to_array was PrimitiveArrayOop!"))
         }
     }
 
@@ -131,11 +132,11 @@ impl Heap for JvmHeap {
         JvmHeap::get_field(oop, field_offset)
     }
 
-    fn allocate_array(&self, klass: Arc<Klass>, size: i32) -> Result<Oop, JvmException> {
+    fn allocate_array(&self, klass: Arc<Klass>, size: i32) -> Result<ArrayOopDesc, JvmException> {
         let new_obj = JvmHeap::allocate_obj_array(klass.clone(), size.clone());
         self.store(new_obj.clone())?;
         Ok(
-            ArrayOop {
+            ArrayOopDesc {
                 klass,
                 size,
                 instance_data: new_obj,
@@ -143,11 +144,11 @@ impl Heap for JvmHeap {
         )
     }
 
-    fn allocate_primitive_array(&self, primitive_type: PrimitiveType, size: i32) -> Result<Oop, JvmException> {
+    fn allocate_primitive_array(&self, primitive_type: PrimitiveType, size: i32) -> Result<PrimitiveArrayOopDesc, JvmException> {
         let new_obj = JvmHeap::allocate_primitive_array(primitive_type.clone(), size.clone());
         self.store(new_obj.clone())?;
         Ok(
-            PrimitiveArrayOop {
+            PrimitiveArrayOopDesc {
                 inner_type: primitive_type,
                 size,
                 instance_data: new_obj,
@@ -184,9 +185,9 @@ impl Heap for JvmHeap {
 
     fn array_length(&self, array_oop: Oop) -> Result<i32, JvmException> {
         match array_oop {
-            Oop::ArrayOop {
-                size, ..
-            } => Ok(size),
+            ArrayOop(ArrayOopDesc {
+                         size, ..
+                     }) => Ok(size),
             incorrect_oop => Err(JvmException::from(format!("ArrayOOP Expected, but got: {:?}", incorrect_oop))),
         }
     }

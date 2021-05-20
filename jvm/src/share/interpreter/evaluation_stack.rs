@@ -1,5 +1,5 @@
 use crate::share::utilities::jvm_exception::JvmException;
-use crate::share::utilities::jvm_value::JvmValue;
+use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
 
 #[cfg(test)]
 #[path = "./evaluation_stack_test.rs"]
@@ -58,6 +58,14 @@ impl EvaluationStack {
                 "JvmValue::Int expected but got: {:?}",
                 other
             ))),
+        }
+    }
+
+    pub fn pop_ref(&mut self) -> Result<ObjectRef, JvmException> {
+        if let JvmValue::ObjRef(object_ref) = self.pop() {
+            Ok(object_ref)
+        } else {
+            Err(JvmException::from("Non-object ref value was found on top of stack!"))
         }
     }
 

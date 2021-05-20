@@ -7,7 +7,7 @@ use crate::share::utilities::global_symbols::java_lang_String;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::{JvmValue, PrimitiveType};
 use crate::share::utilities::jvm_value::JvmValue::ObjRef;
-use crate::share::utilities::jvm_value::ObjectRef::Oop;
+use crate::share::utilities::jvm_value::ObjectRef::Ref;
 
 #[cfg(test)]
 #[path = "interpreter_test.rs"]
@@ -124,15 +124,9 @@ pub fn interpret(
                 &opcode::DALOAD => panic!("UnImplemented byte-code: DALOAD"),
                 &opcode::AALOAD => {
                     let index = eval_stack.pop_int()?;
-                    if let JvmValue::ObjRef(array_ref) = eval_stack.pop() {
-                        let object_ref = current_frame.heap().load_from_array(array_ref.dereference()?, index)?;
-
-                        eval_stack.push(object_ref);
-                    } else {
-                        return Err(JvmException::from(
-                            "Non-object ref value was found on top of stack when executing AALOAD",
-                        ));
-                    }
+                    let array_ref = eval_stack.pop_ref()?;
+                    let object_ref = current_frame.heap().load_from_array(array_ref.dereference()?, index)?;
+                    eval_stack.push(object_ref);
                 }
                 &opcode::BALOAD => panic!("UnImplemented byte-code: BALOAD"),
                 &opcode::CALOAD => panic!("UnImplemented byte-code: CALOAD"),

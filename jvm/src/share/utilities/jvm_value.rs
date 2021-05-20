@@ -1,18 +1,20 @@
 use crate::share::memory::oop::Oop;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue::ObjRef;
+use crate::share::memory::oop::oops::{ObjectOopDesc, ArrayOopDesc, PrimitiveArrayOopDesc};
+use crate::share::memory::oop::Oop::{ObjectOop, ArrayOop, PrimitiveArrayOop};
 
 #[derive(Debug, Clone)]
 pub enum ObjectRef {
     Null,
-    Oop(Oop),
+    Ref(Oop),
 }
 
 impl ObjectRef {
     pub fn dereference(&self) -> Result<Oop, JvmException> {
         match self {
             ObjectRef::Null => Err(JvmException::from("NPE!!!")),
-            ObjectRef::Oop(oop) => Ok(oop.clone())
+            ObjectRef::Ref(oop) => Ok(oop.clone())
         }
     }
 }
@@ -46,7 +48,26 @@ impl JvmValue {
 
 impl From<Oop> for JvmValue {
     fn from(oop: Oop) -> Self {
-        JvmValue::ObjRef(ObjectRef::Oop(oop))
+        JvmValue::ObjRef(ObjectRef::Ref(oop))
+    }
+}
+
+impl From<ObjectOopDesc> for JvmValue {
+    fn from(oop: ObjectOopDesc) -> Self {
+        JvmValue::from(ObjectOop(oop))
+    }
+}
+
+impl From<ArrayOopDesc> for JvmValue {
+    fn from(oop: ArrayOopDesc) -> Self {
+        JvmValue::from(ArrayOop(oop))
+    }
+}
+
+
+impl From<PrimitiveArrayOopDesc> for JvmValue {
+    fn from(oop: PrimitiveArrayOopDesc) -> Self {
+        JvmValue::from(PrimitiveArrayOop(oop))
     }
 }
 
