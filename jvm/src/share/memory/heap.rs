@@ -90,19 +90,14 @@ impl Heap for JvmHeap {
     fn allocate_object(&self, klass: Arc<Klass>) -> Result<ObjectOopDesc, JvmException> {
         let new_obj = JvmHeap::build_default_object(klass.clone());
         self.store(new_obj.clone())?;
-        Ok(
-            ObjectOopDesc {
-                klass,
-                instance_data: new_obj,
-            }
-        )
+        Ok(ObjectOopDesc::new(klass, new_obj))
     }
 
     fn put_object_field(&self, ref_to_object: Oop, field_offset: usize, value: JvmValue) -> Result<(), JvmException> {
-        match ref_to_object {
-            ObjectOop(ObjectOopDesc { instance_data, .. }) => {
+        match &ref_to_object {
+            ObjectOop(..) => {
                 let mut guard = self.heap.lock().unwrap();
-
+                let instance_data = ref_to_object.instance_data();
                 let oop = guard
                     .get(&instance_data.key())
                     .ok_or(JvmException::from(format!("Could not get object lock for ref: {:?}", instance_data)))?;
@@ -199,6 +194,12 @@ type HeapWordKey = usize;
 #[derive(Debug, Clone)]
 pub struct HeapWord {
     data: Arc<RwLock<Vec<JvmValue>>>,
+}
+
+impl PartialEq for HeapWord {
+    fn eq(&self, other: &Self) -> bool {
+        self.key() == other.key()
+    }
 }
 
 impl HeapWord {

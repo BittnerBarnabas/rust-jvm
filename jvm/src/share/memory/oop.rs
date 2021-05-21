@@ -6,7 +6,7 @@ use crate::share::memory::oop::oops::{ObjectOopDesc, PrimitiveArrayOopDesc, Arra
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::{JvmValue, PrimitiveType};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Oop {
     ObjectOop(ObjectOopDesc),
     ArrayOop(ArrayOopDesc),
@@ -16,9 +16,7 @@ pub enum Oop {
 impl Oop {
     pub fn instance_data(&self) -> &HeapWord {
         match self {
-            Self::ObjectOop(ObjectOopDesc { instance_data, .. }) => {
-                instance_data
-            }
+            Self::ObjectOop(object) => object.instance_data(),
             Self::ArrayOop(ArrayOopDesc { instance_data, .. }) => {
                 instance_data
             }
@@ -38,26 +36,39 @@ pub mod oops {
 
     type KlassPointer = Arc<Klass>;
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq)]
     pub struct PrimitiveArrayOopDesc {
         pub inner_type: PrimitiveType,
         pub size: i32,
         pub instance_data: HeapWord,
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq)]
     pub struct ArrayOopDesc {
         pub klass: KlassPointer,
         pub size: i32,
         pub instance_data: HeapWord,
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq)]
     pub struct ObjectOopDesc {
         // mark: usize,
         //should make this more compact
-        pub klass: KlassPointer,
-        pub instance_data: HeapWord,
+        klass: KlassPointer,
+        instance_data: HeapWord,
+    }
+
+    impl ObjectOopDesc {
+        pub fn new(klass: KlassPointer, instance_data: HeapWord) -> ObjectOopDesc {
+            ObjectOopDesc {
+                klass,
+                instance_data,
+            }
+        }
+
+        pub fn instance_data(&self) -> &HeapWord {
+            &self.instance_data
+        }
     }
 }
 

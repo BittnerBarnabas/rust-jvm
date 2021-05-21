@@ -4,7 +4,7 @@ use crate::share::utilities::jvm_value::JvmValue::ObjRef;
 use crate::share::memory::oop::oops::{ObjectOopDesc, ArrayOopDesc, PrimitiveArrayOopDesc};
 use crate::share::memory::oop::Oop::{ObjectOop, ArrayOop, PrimitiveArrayOop};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ObjectRef {
     Null,
     Ref(Oop),
@@ -25,7 +25,7 @@ impl Default for ObjectRef {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum JvmValue {
     Boolean { val: bool },
     Byte { val: i8 },
@@ -86,7 +86,7 @@ impl From<PrimitiveType> for JvmValue {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PrimitiveType {
     Boolean,
     Byte,

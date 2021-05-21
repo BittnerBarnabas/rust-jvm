@@ -16,6 +16,7 @@ use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
 use crate::share::utilities::jvm_value::JvmValue::ObjRef;
 use crate::share::memory::oop::Oop::ObjectOop;
+use crate::share::utilities::testing;
 
 fn run_interpreter(code: Vec<u8>) -> Result<JvmValue, JvmException> {
     let mut store = JvmLocalVariableStore::new();
@@ -250,7 +251,7 @@ fn aa_store() {
     store.expect_load()
         .with(eq(3))
         .times(1)
-        .returning(|_| JvmValue::ObjRef(ObjectRef::Null));
+        .returning(|_| JvmValue::from(testing::test_object_oop()));
 
     store.expect_load()
         .with(eq(2))
@@ -268,7 +269,7 @@ fn aa_store() {
             let mut mock_heap = Heap::default();
 
             mock_heap.expect_store_in_array()
-                .with(eq(ObjectRef::Null),  eq(5), eq(JvmValue::Int {val:8}))
+                .with(eq(testing::test_object_oop()),  eq(5), eq(JvmValue::Int {val:8}))
                 .times(1)
                 .returning(|_, _, _| Ok(()));
 

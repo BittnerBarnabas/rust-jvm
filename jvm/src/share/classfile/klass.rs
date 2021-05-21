@@ -41,6 +41,13 @@ impl Debug for Klass {
     }
 }
 
+impl PartialEq for Klass {
+    fn eq(&self, other: &Self) -> bool {
+        //TODO include classloader into the equation
+        self.this_class == other.this_class
+    }
+}
+
 
 impl Klass {
     pub fn new(

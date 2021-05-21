@@ -1,6 +1,11 @@
 use crate::share::interpreter::evaluation_stack::EvaluationStack;
+use crate::share::memory::oop::Oop::ObjectOop;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
+use crate::share::utilities::jvm_value::ObjectRef::{Null, Ref};
+use crate::share::memory::oop::oops::ObjectOopDesc;
+use crate::share::utilities::testing;
+use crate::share::memory::heap::HeapWord;
 
 #[test]
 pub fn push_and_then_pop() {
@@ -57,6 +62,23 @@ pub fn add_i_constants() {
 
     assert_eq!(Ok(5), stack_under_test.pop_int());
     assert_eq!(Ok(1), stack_under_test.pop_int());
+}
+
+#[test]
+pub fn pop_ref() {
+    let mut stack_under_test = EvaluationStack::new();
+
+    let object_ref = testing::test_object_ref();
+    stack_under_test.push(object_ref.clone());
+    stack_under_test.push(JvmValue::ObjRef(Null));
+
+
+    assert_eq!(Ok(Null), stack_under_test.pop_ref());
+    if let JvmValue::ObjRef(object_ref) = object_ref {
+        assert_eq!(Ok(object_ref), stack_under_test.pop_ref());
+        return;
+    }
+    assert!(false, "Wrong type!")
 }
 
 
