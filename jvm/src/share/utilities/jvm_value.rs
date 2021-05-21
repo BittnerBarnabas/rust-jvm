@@ -91,6 +91,12 @@ impl From<i8> for JvmValue {
     }
 }
 
+impl From<i32> for JvmValue {
+    fn from(val: i32) -> Self {
+        JvmValue::Int { val }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum PrimitiveType {
     Boolean,

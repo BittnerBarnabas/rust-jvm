@@ -127,8 +127,7 @@ impl PartialEq for HeapWord {
 }
 
 impl HeapWord {
-    //TODO: Make sure that only Heap can create heapwords
-    pub fn new(data: Vec<JvmValue>) -> HeapWord {
+    fn new(data: Vec<JvmValue>) -> HeapWord {
         HeapWord {
             data: Arc::new(RwLock::new(data))
         }
@@ -148,5 +147,14 @@ impl HeapWord {
     }
     pub fn data(&self) -> Arc<RwLock<Vec<JvmValue>>> {
         self.data.clone()
+    }
+}
+
+#[cfg(test)]
+impl HeapWord {
+    pub fn test_object(data: Vec<JvmValue>) -> HeapWord {
+        HeapWord {
+            data: Arc::new(RwLock::new(data))
+        }
     }
 }

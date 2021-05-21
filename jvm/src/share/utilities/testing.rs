@@ -16,7 +16,7 @@ pub fn test_class() -> Arc<Klass> {
 }
 
 pub fn test_object_oop() -> Oop {
-    ObjectOop(ObjectOopDesc::new(test_class(), HeapWord::new(vec![])))
+    ObjectOop(ObjectOopDesc::new(test_class(), HeapWord::test_object(vec![])))
 }
 
 pub fn test_object_ref() -> JvmValue {

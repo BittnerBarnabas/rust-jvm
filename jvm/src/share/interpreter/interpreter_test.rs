@@ -17,6 +17,9 @@ use crate::share::utilities::jvm_value::{JvmValue, ObjectRef};
 use crate::share::utilities::jvm_value::JvmValue::ObjRef;
 use crate::share::memory::oop::Oop::ObjectOop;
 use crate::share::utilities::testing;
+use crate::share::memory::oop::oops::ObjectOopDesc;
+use crate::share::utilities::testing::test_class;
+use crate::share::memory::heap::HeapWord;
 
 fn run_interpreter(code: Vec<u8>) -> Result<JvmValue, JvmException> {
     let mut store = JvmLocalVariableStore::new();
@@ -248,35 +251,25 @@ fn aa_store() {
     let mut store = JvmLocalVariableStore::new();
     let mut frame = JvmStackFrame::new();
 
+    let test_data = HeapWord::test_object(vec![JvmValue::null_obj(); 6]);
+    let test_data_clone = test_data.clone();
     store.expect_load()
         .with(eq(3))
         .times(1)
-        .returning(|_| JvmValue::from(testing::test_object_oop()));
+        .returning(move |_| JvmValue::from(ObjectOop(ObjectOopDesc::new(test_class(), test_data_clone.clone()))));
 
     store.expect_load()
         .with(eq(2))
         .times(1)
-        .returning(|_| JvmValue::Int { val: 5 });
+        .returning(|_| JvmValue::from(5 as i32));
 
     store.expect_load()
         .with(eq(1))
         .times(1)
-        .returning(|_| JvmValue::Int { val: 8 });
-
-    frame.expect_heap()
-        .times(1)
-        .returning(|| {
-            let mut mock_heap = Heap::default();
-
-            mock_heap.expect_store_in_array()
-                .with(eq(testing::test_object_oop()),  eq(5), eq(JvmValue::Int {val:8}))
-                .times(1)
-                .returning(|_, _, _| Ok(()));
-
-            Arc::new(mock_heap)
-        });
+        .returning(|_| JvmValue::from(8 as i32));
 
     let result = interpret(&frame, &code, &mut store);
 
-    assert_eq!(result, Ok(JvmValue::Void {}))
+    assert_eq!(Ok(JvmValue::Void {}), result);
+    assert_eq!(Ok(JvmValue::from(8 as i32)), test_data.get_field(5))
 }
