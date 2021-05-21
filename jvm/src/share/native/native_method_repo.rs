@@ -1,6 +1,6 @@
 use crate::share::classfile::method::MethodInfo;
 use crate::share::native::native_methods::NativeMethod;
-use crate::share::utilities::global_symbols::{
+use crate::share::utilities::global_symbols::Symbols::{
     java_lang_Object_hashCode,
     java_lang_Object_registerNatives,
     java_lang_Class_registerNatives,

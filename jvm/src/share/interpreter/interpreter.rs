@@ -3,11 +3,15 @@ use crate::share::interpreter::evaluation_stack::EvaluationStack;
 use crate::share::interpreter::local_variables::JvmLocalVariableStore;
 use crate::share::interpreter::opcode;
 use crate::share::runtime::stack_frame::JvmStackFrame;
-use crate::share::utilities::global_symbols::java_lang_String;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::{JvmValue, PrimitiveType};
 use crate::share::utilities::jvm_value::JvmValue::ObjRef;
 use crate::share::utilities::jvm_value::ObjectRef::Ref;
+use crate::share::native::native_helper_classes::java_lang_String;
+use crate::share::utilities::global_symbols::Symbols;
+use std::ops::Deref;
+use crate::share::memory::oop::Oop;
+
 
 #[cfg(test)]
 #[path = "interpreter_test.rs"]
@@ -61,7 +65,7 @@ pub fn interpret(
                         CpInfo::Float { bytes } => eval_stack.push(JvmValue::Float { val: bytes.clone() as f32 }),
                         CpInfo::String { string_index } => {
                             let string_klass = current_frame.class_loader()
-                                .load_and_init_class(&java_lang_String)?;
+                                .load_and_init_class(&Symbols::java_lang_String)?;
 
                             let string_ref = current_frame.heap()
                                 .allocate_object(string_klass)?;
@@ -70,11 +74,10 @@ pub fn interpret(
                                 .map(|str| str.into_bytes())
                                 .expect("No String reference was found!");
 
-                            // if let byte_array_ref = match
-                            // current_frame.heap()
-                            //     .allocate_primitive_array(PrimitiveType::Byte, string_contents.len() as i32)? {
-                            //     ObjRef() => {}
-                            // }
+                            let buffer = current_frame.heap().allocate_primitive_array(PrimitiveType::Byte, string_contents.len() as i32)?;
+                            buffer.copy_bytes(current_frame.heap().deref(), string_contents);
+                            java_lang_String::put_buffer(string_ref.clone(), buffer)?;
+                            eval_stack.push(JvmValue::from(string_ref));
                         }
                         _ => {
                             let qualifier = current_frame.constant_pool().get_qualified_name(index as u16);
@@ -125,7 +128,7 @@ pub fn interpret(
                 &opcode::AALOAD => {
                     let index = eval_stack.pop_int()?;
                     let array_ref = eval_stack.pop_ref()?;
-                    let object_ref = current_frame.heap().load_from_array(array_ref.dereference()?, index)?;
+                    let object_ref = array_ref.dereference()?.instance_data().get_field(index as usize)?;
                     eval_stack.push(object_ref);
                 }
                 &opcode::BALOAD => panic!("UnImplemented byte-code: BALOAD"),
@@ -167,9 +170,7 @@ pub fn interpret(
                     let index = eval_stack.pop_int()?;
                     if let JvmValue::ObjRef(array_ref) = eval_stack.pop() {
                         //do a lots of checks here
-                        current_frame
-                            .heap()
-                            .store_in_array(array_ref.dereference()?, index, value)?;
+                        array_ref.dereference()?.instance_data().put_field(index as usize, value)?;
                     } else {
                         return Err(JvmException::from("Stack should contain a Reference."));
                     }
@@ -327,7 +328,7 @@ pub fn interpret(
                                 .map(|field_offset| {
                                     if let JvmValue::ObjRef(object_ref) = object_to_modify {
                                         //do a lots of checks here
-                                        Ok(current_frame.heap().load_object_field(object_ref.dereference()?, field_offset)?)
+                                        Ok(object_ref.dereference()?.instance_data().get_field(field_offset)?)
                                     } else {
                                         Err(JvmException::from(format!("Stack should contain a Reference to an Object, but was {:?}", object_to_modify)))
                                     }
@@ -358,8 +359,8 @@ pub fn interpret(
                             klass.get_instance_field_offset(&name, &type_descriptor)
                                 .map(|field_offset| {
                                     if let JvmValue::ObjRef(object_ref) = object_to_modify {
-                                        //do a lots of checks here
-                                        current_frame.heap().put_object_field(object_ref.dereference()?, field_offset, value_to_assign)?;
+                                        //TODO: do a lots of checks here
+                                        object_ref.dereference()?.instance_data().put_field(field_offset, value_to_assign)?;
                                         Ok(())
                                     } else {
                                         Err(JvmException::from(format!("Stack should contain a Reference to an Object, but was {:?}", object_to_modify)))
@@ -456,7 +457,11 @@ pub fn interpret(
                 &opcode::ARRAYLENGTH => {
                     if let JvmValue::ObjRef(array_ref) = eval_stack.pop() {
                         //do a lots of checks here
-                        let array_length = current_frame.heap().array_length(array_ref.dereference()?)?;
+                        let array_length = match array_ref.dereference()? {
+                            Oop::ArrayOop(desc) => Ok(desc.size),
+                            Oop::PrimitiveArrayOop(desc) => Ok(desc.size),
+                            _ => Err(JvmException::from("Expected array reference!"))
+                        }?;
                         eval_stack.push(JvmValue::Int {
                             val: array_length,
                         })

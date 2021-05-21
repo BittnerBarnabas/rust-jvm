@@ -64,7 +64,6 @@ impl From<ArrayOopDesc> for JvmValue {
     }
 }
 
-
 impl From<PrimitiveArrayOopDesc> for JvmValue {
     fn from(oop: PrimitiveArrayOopDesc) -> Self {
         JvmValue::from(PrimitiveArrayOop(oop))
@@ -83,6 +82,12 @@ impl From<PrimitiveType> for JvmValue {
             PrimitiveType::Double => JvmValue::Double { val: 0.0 },
             PrimitiveType::Char => JvmValue::Char { val: '\0' },
         }
+    }
+}
+
+impl From<i8> for JvmValue {
+    fn from(val: i8) -> Self {
+        JvmValue::Byte { val }
     }
 }
 

@@ -9,7 +9,7 @@ use crate::share::classfile::klass::Klass;
 use crate::share::classfile::method::MethodInfo;
 use crate::share::runtime::stack_frame::{JvmStackFrame, StackFrame};
 use crate::share::utilities::context::GlobalContext;
-use crate::share::utilities::global_symbols::{java_lang_Object, java_lang_Class};
+use crate::share::utilities::global_symbols::Symbols::{java_lang_Object, java_lang_Class};
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
 use std::borrow::BorrowMut;

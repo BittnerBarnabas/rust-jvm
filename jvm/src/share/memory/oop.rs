@@ -31,8 +31,10 @@ pub mod oops {
     use std::sync::Arc;
 
     use crate::share::classfile::klass::Klass;
-    use crate::share::memory::heap::HeapWord;
-    use crate::share::utilities::jvm_value::PrimitiveType;
+    use crate::share::memory::heap::{HeapWord, Heap};
+    use crate::share::utilities::jvm_value::{PrimitiveType, JvmValue};
+    use crate::share::utilities::jvm_exception::JvmException;
+    use std::borrow::BorrowMut;
 
     type KlassPointer = Arc<Klass>;
 
@@ -70,5 +72,17 @@ pub mod oops {
             &self.instance_data
         }
     }
+
+    impl PrimitiveArrayOopDesc {
+        pub fn copy_bytes(&self, heap: &dyn Heap, bytes: Vec<u8>) -> Result<(), JvmException> {
+            let arc = self.instance_data.data();
+            let mut data = arc.write().unwrap();
+            for i in 0..bytes.len() {
+                data[i] = JvmValue::from(bytes[i] as i8)
+            }
+            Ok(())
+        }
+    }
+
 }
 
