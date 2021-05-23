@@ -86,9 +86,7 @@ pub fn interpret(
                                 .class_loader()
                                 .load_class(&qualifier)?;
 
-                            // eval_stack.push(JvmValue::ObjRef(ObjectRef::from(0)));
-
-                            panic!("Implement this properly!!")
+                            eval_stack.push(JvmValue::from(klass.get_java_mirror()));
                         }
                     }
                 }

@@ -267,6 +267,9 @@ impl BootstrapClassLoader {
             //initialize static fields to their default values
             class_to_init.initialize_static_fields();
 
+            let mirror = self.context.heap().allocate_class(class_to_init.clone())?;
+            class_to_init.set_java_mirror(mirror);
+
             class_to_init
                 .get_method_by_name_desc("<clinit>()V".to_string())
                 .map(|init: Arc<MethodInfo>| -> Result<(), JvmException> {

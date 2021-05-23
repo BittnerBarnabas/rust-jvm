@@ -18,6 +18,7 @@ pub trait Heap: Send + Sync {
     fn allocate_object(&self, klass: Arc<Klass>) -> Result<ObjectOopDesc, JvmException>;
     fn allocate_array(&self, klass: Arc<Klass>, size: i32) -> Result<ArrayOopDesc, JvmException>;
     fn allocate_primitive_array(&self, primitive_type: PrimitiveType, size: i32) -> Result<PrimitiveArrayOopDesc, JvmException>;
+    fn allocate_class(&self, klass: Arc<Klass>) -> Result<ObjectOopDesc, JvmException>;
 }
 
 pub struct JvmHeap {
@@ -110,6 +111,13 @@ impl Heap for JvmHeap {
                 instance_data: new_obj,
             }
         )
+    }
+
+    fn allocate_class(&self, klass: Arc<Klass>) -> Result<ObjectOopDesc, JvmException> {
+        //TODO implement this properly, should return a more specialized OOPDesc for class instances
+        let new_obj = JvmHeap::build_default_object(klass.clone());
+        self.store(new_obj.clone())?;
+        Ok(ObjectOopDesc::new(klass, new_obj))
     }
 }
 

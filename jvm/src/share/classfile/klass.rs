@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex};
 use crate::share::native::native_method_repo::NativeMethodRepo;
 use crate::share::parser::descriptors::FieldDescriptor;
 use std::fmt::{Debug, Formatter};
+use crate::share::memory::oop::oops::ObjectOopDesc;
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub enum ClassLoadingStatus {
@@ -33,6 +34,7 @@ pub struct Klass {
     methods: Vec<Arc<MethodInfo>>,
     attributes: Vec<AttributeInfo>,
     status: Mutex<ClassLoadingStatus>,
+    java_mirror: Mutex<Option<ObjectOopDesc>>,
 }
 
 impl Debug for Klass {
@@ -88,6 +90,7 @@ impl Klass {
             methods,
             attributes,
             status: Mutex::new(Mentioned),
+            java_mirror: Mutex::new(None)
         }
     }
 
@@ -105,6 +108,14 @@ impl Klass {
 
     pub fn set_super_class(&self, super_class: Arc<Klass>) {
         self.super_class.lock().unwrap().replace(super_class);
+    }
+
+    pub fn set_java_mirror(&self, oop: ObjectOopDesc) {
+        self.java_mirror.lock().unwrap().replace(oop);
+    }
+
+    pub fn get_java_mirror(&self) -> ObjectOopDesc {
+        self.java_mirror.lock().unwrap().as_ref().unwrap().clone()
     }
 
     pub fn interfaces(&self) -> Vec<String> {
