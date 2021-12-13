@@ -10,6 +10,7 @@ use crate::share::native::native_methods::NativeMethodArgs;
 use crate::share::utilities::context::GlobalContext;
 use crate::share::utilities::jvm_exception::JvmException;
 use crate::share::utilities::jvm_value::JvmValue;
+use crate::share::interpreter::interpreter::Interpreter;
 
 #[cfg_attr(test, mockall::automock)]
 pub trait JvmStackFrame {
@@ -93,7 +94,7 @@ impl JvmStackFrame for StackFrame<'_> {
                     local_variables.store(args.get(i).expect("Should not happen.").clone(), i as u8)
                 }
 
-                let result = crate::share::interpreter::interpreter::interpret(
+                let result = Interpreter::interpret(
                     &next_frame,
                     code_info.bytes(),
                     &mut local_variables,

@@ -32,6 +32,10 @@ pub trait ClassLoader: Send + Sync {
         qualified_name: Qualifier,
     ) -> Result<Arc<MethodInfo>, JvmException>;
 
+    fn lookup_interface_method(&self,
+                               calling_class: Arc<Klass>,
+                               qualified_name: Qualifier) -> Result<Arc<MethodInfo>, JvmException>;
+
     fn load_class(&self, qualified_name: &Qualifier) -> Result<Arc<Klass>, JvmException>;
 
     fn load_and_init_class(&self, qualified_name: &String) -> Result<Arc<Klass>, JvmException>;
@@ -106,6 +110,39 @@ impl ClassLoader for BootstrapClassLoader {
         qualified_name: Qualifier,
     ) -> Result<Arc<MethodInfo>, JvmException> {
         self.lookup_static_method(qualified_name)
+    }
+
+    fn lookup_interface_method(&self, calling_class: Arc<Klass>, qualified_name: Qualifier) -> Result<Arc<MethodInfo>, JvmException> {
+        match &qualified_name {
+            Qualifier::MethodRef {
+                class_name,
+                name: _,
+                descriptor: _,
+            } => {
+                let klass = self.load_class(class_name)?;
+
+                if !klass.is_being_initialized() && !klass.is_initialized() {
+                    self.load_and_init_class(class_name)?;
+                }
+                assert!(klass.is_initialized() || klass.is_being_initialized());
+                assert!(klass.is_interface());
+
+                let resolved_method = klass
+                    .get_method_by_qualified_name(&qualified_name)
+                    .filter(|m| !m.is_abstract())
+                    .or(
+                        {
+                            let declared_method = calling_class
+                                .get_method_by_qualified_name(&qualified_name);
+
+                            declared_method
+                        }
+                    ).ok_or(JvmException::from(format!("Method {:?} not found on class {:?}", qualified_name, klass)))?;
+
+                Ok(resolved_method)
+            }
+            _ => Err(JvmException::from(format!("Expected MethodRef but got {:?}", qualified_name))),
+        }
     }
 
     fn load_class(&self, qualified_name: &Qualifier) -> Result<Arc<Klass>, JvmException> {
@@ -271,7 +308,7 @@ impl BootstrapClassLoader {
             class_to_init.set_java_mirror(mirror);
 
             class_to_init
-                .get_method_by_name_desc("<clinit>()V".to_string())
+                .get_cl_init()
                 .map(|init: Arc<MethodInfo>| -> Result<(), JvmException> {
                     let frame = StackFrame::new(&self.context, class_to_init.clone());
                     frame.execute_method(init, Vec::new())?;

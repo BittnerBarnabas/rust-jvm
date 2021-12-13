@@ -1,5 +1,5 @@
 use crate::share::classfile::access_flags;
-use crate::share::classfile::access_flags::{ACC_NATIVE, ACC_STATIC};
+use crate::share::classfile::access_flags::{ACC_NATIVE, ACC_STATIC, ACC_ABSTRACT};
 use crate::share::classfile::attribute::AttributeInfo;
 use crate::share::classfile::klass::Klass;
 use crate::share::native::native_methods::NativeMethod;
@@ -123,6 +123,10 @@ impl MethodInfo {
 
     pub fn is_static(&self) -> bool {
         access_flags::flag_matches(self.access_flags, ACC_STATIC)
+    }
+
+    pub fn is_abstract(&self) -> bool {
+        access_flags::flag_matches(self.access_flags, ACC_ABSTRACT)
     }
 
     pub fn set_native_method(&self, method: NativeMethod) {

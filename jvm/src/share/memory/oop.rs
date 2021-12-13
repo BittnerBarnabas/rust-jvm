@@ -25,6 +25,14 @@ impl Oop {
             }
         }
     }
+
+    pub fn java_klass_or_fail(&self) -> Arc<Klass> {
+        match self {
+            Oop::ObjectOop(oops) => oops.klass(),
+            Oop::ArrayOop(oops) => oops.klass(),
+            Oop::PrimitiveArrayOop(_) => panic!("Can only get the klass from Reference Types!")
+        }
+    }
 }
 
 pub mod oops {
@@ -71,6 +79,16 @@ pub mod oops {
         pub fn instance_data(&self) -> &HeapWord {
             &self.instance_data
         }
+
+        pub fn klass(&self) -> KlassPointer {
+            self.klass.clone()
+        }
+    }
+
+    impl ArrayOopDesc {
+        pub fn klass(&self) -> KlassPointer {
+            self.klass.clone()
+        }
     }
 
     impl PrimitiveArrayOopDesc {
@@ -83,6 +101,5 @@ pub mod oops {
             Ok(())
         }
     }
-
 }
 

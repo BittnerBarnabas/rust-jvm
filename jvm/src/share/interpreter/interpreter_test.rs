@@ -4,7 +4,6 @@ use mockall::*;
 use mockall::predicate::*;
 use mockall_double::double;
 
-use crate::share::interpreter::interpreter::interpret;
 #[double]
 use crate::share::interpreter::local_variables::JvmLocalVariableStore;
 use crate::share::interpreter::opcode;
@@ -20,13 +19,18 @@ use crate::share::utilities::testing;
 use crate::share::memory::oop::oops::ObjectOopDesc;
 use crate::share::utilities::testing::test_class;
 use crate::share::memory::heap::HeapWord;
+use crate::share::interpreter::interpreter::Interpreter;
 
 fn run_interpreter(code: Vec<u8>) -> Result<JvmValue, JvmException> {
     let mut store = JvmLocalVariableStore::new();
     let frame = JvmStackFrame::new();
 
-    let result = interpret(&frame, &code, &mut store);
+    let result = Interpreter::interpret(&frame, &code, &mut store);
     result
+}
+
+fn assert_stack_empty(interpreter: &Interpreter) {
+    assert_eq!(Vec::<JvmValue>::new(), interpreter.stack_contents())
 }
 
 #[test]
@@ -89,7 +93,7 @@ pub fn iload_with_correct_index() {
         .times(1)
         .returning(|_| JvmValue::Int { val: 12 });
 
-    let result = interpret(&frame, &code, &mut store);
+    let result = Interpreter::interpret(&frame, &code, &mut store);
 
     assert_eq!(Ok(JvmValue::Int { val: 12 }), result)
 }
@@ -107,7 +111,7 @@ pub fn iload_with_incorrect_index() {
         .times(1)
         .returning(|_| panic!("Test Exception"));
 
-    interpret(&frame, &code, &mut store);
+    Interpreter::interpret(&frame, &code, &mut store);
 }
 
 #[test]
@@ -122,7 +126,7 @@ pub fn iload0_with_correct_index() {
         .times(1)
         .returning(|_| JvmValue::Int { val: 12 });
 
-    let result = interpret(&frame, &code, &mut store);
+    let result = Interpreter::interpret(&frame, &code, &mut store);
 
     assert_eq!(Ok(JvmValue::Int { val: 12 }), result)
 }
@@ -139,7 +143,7 @@ pub fn iload1_with_correct_index() {
         .times(1)
         .returning(|_| JvmValue::Int { val: 12 });
 
-    let result = interpret(&frame, &code, &mut store);
+    let result = Interpreter::interpret(&frame, &code, &mut store);
 
     assert_eq!(Ok(JvmValue::Int { val: 12 }), result)
 }
@@ -156,7 +160,7 @@ pub fn iload2_with_correct_index() {
         .times(1)
         .returning(|_| JvmValue::Int { val: 12 });
 
-    let result = interpret(&frame, &code, &mut store);
+    let result = Interpreter::interpret(&frame, &code, &mut store);
 
     assert_eq!(Ok(JvmValue::Int { val: 12 }), result)
 }
@@ -173,7 +177,7 @@ pub fn iload3_with_correct_index() {
         .times(1)
         .returning(|_| JvmValue::Int { val: 12 });
 
-    let result = interpret(&frame, &code, &mut store);
+    let result = Interpreter::interpret(&frame, &code, &mut store);
 
     assert_eq!(Ok(JvmValue::Int { val: 12 }), result)
 }
@@ -268,8 +272,119 @@ fn aa_store() {
         .times(1)
         .returning(|_| JvmValue::from(8 as i32));
 
-    let result = interpret(&frame, &code, &mut store);
+    let result = Interpreter::interpret(&frame, &code, &mut store);
 
     assert_eq!(Ok(JvmValue::Void {}), result);
     assert_eq!(Ok(JvmValue::from(8 as i32)), test_data.get_field(5))
+}
+
+#[test]
+pub fn dup() {
+    let code = vec![
+        opcode::DUP,
+        opcode::RETURN,
+    ];
+
+    let mut store = JvmLocalVariableStore::new();
+    let frame = JvmStackFrame::new();
+
+    let mut interpreter = Interpreter::new(&frame, &code, &mut store);
+    interpreter.set_stack_contents(vec![JvmValue::Int { val: 5 }]);
+
+    let result = interpreter.do_interpret();
+
+    assert_eq!(Ok(JvmValue::Void {}), result);
+    assert_eq!(vec![JvmValue::Int { val: 5 }; 2], interpreter.stack_contents());
+}
+
+#[test]
+pub fn astore_n() {
+    let code = vec![
+        opcode::ASTORE_0,
+        opcode::ASTORE_1,
+        opcode::ASTORE_2,
+        opcode::ASTORE_3,
+        opcode::RETURN,
+    ];
+    let test_object_ref = testing::test_object_ref();
+
+    let mut store = JvmLocalVariableStore::new();
+    store.expect_store()
+        .with(eq(test_object_ref.clone()), eq(0))
+        .times(1)
+        .returning(|_, _| ());
+    store.expect_store()
+        .with(eq(test_object_ref.clone()), eq(1))
+        .times(1)
+        .returning(|_, _| ());
+    store.expect_store()
+        .with(eq(test_object_ref.clone()), eq(2))
+        .times(1)
+        .returning(|_, _| ());
+    store.expect_store()
+        .with(eq(test_object_ref.clone()), eq(3))
+        .times(1)
+        .returning(|_, _| ());
+
+    let frame = JvmStackFrame::new();
+    let mut interpreter = Interpreter::new(&frame, &code, &mut store);
+
+    interpreter.set_stack_contents(
+        vec![
+            test_object_ref.clone(),
+            test_object_ref.clone(),
+            test_object_ref.clone(),
+            test_object_ref.clone()
+        ]
+    );
+
+    let result = interpreter.do_interpret();
+
+    assert_eq!(Ok(JvmValue::Void {}), result);
+    assert_stack_empty(&interpreter);
+}
+#[test]
+pub fn if_nonnull() {
+    let code = vec![
+        opcode::ALOAD_0,
+        opcode::IFNONNULL,
+
+        opcode::IRETURN,
+    ];
+    let test_object_ref = testing::test_object_ref();
+
+    let mut store = JvmLocalVariableStore::new();
+    store.expect_store()
+        .with(eq(test_object_ref.clone()), eq(0))
+        .times(1)
+        .returning(|_, _| ());
+    store.expect_store()
+        .with(eq(test_object_ref.clone()), eq(1))
+        .times(1)
+        .returning(|_, _| ());
+    store.expect_store()
+        .with(eq(test_object_ref.clone()), eq(2))
+        .times(1)
+        .returning(|_, _| ());
+    store.expect_store()
+        .with(eq(test_object_ref.clone()), eq(3))
+        .times(1)
+        .returning(|_, _| ());
+
+    let frame = JvmStackFrame::new();
+    let mut interpreter = Interpreter::new(&frame, &code, &mut store);
+
+    interpreter.set_stack_contents(
+        vec![
+            test_object_ref.clone(),
+            test_object_ref.clone(),
+            test_object_ref.clone(),
+            test_object_ref.clone()
+        ]
+    );
+
+    let result = interpreter.do_interpret();
+
+    assert_eq!(Ok(JvmValue::Void {}), result);
+    assert_stack_empty(&interpreter);
 }

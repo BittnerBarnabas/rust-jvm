@@ -10,6 +10,8 @@ use crate::share::native::native_method_repo::NativeMethodRepo;
 use crate::share::parser::descriptors::FieldDescriptor;
 use std::fmt::{Debug, Formatter};
 use crate::share::memory::oop::oops::ObjectOopDesc;
+use crate::share::classfile::access_flags;
+use crate::share::classfile::access_flags::ACC_INTERFACE;
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub enum ClassLoadingStatus {
@@ -90,7 +92,7 @@ impl Klass {
             methods,
             attributes,
             status: Mutex::new(Mentioned),
-            java_mirror: Mutex::new(None)
+            java_mirror: Mutex::new(None),
         }
     }
 
@@ -158,6 +160,10 @@ impl Klass {
             .map_or(Vec::new(), |name| vec![name.clone()])
     }
 
+    pub fn is_interface(&self) -> bool {
+        access_flags::flag_matches(self.access_flags, ACC_INTERFACE)
+    }
+
     pub fn is_mentioned(&self) -> bool {
         *self.status.lock().unwrap() >= Mentioned
     }
@@ -196,7 +202,7 @@ impl Klass {
         };
     }
 
-    pub fn get_method_by_name_desc(&self, name_desc: String) -> Option<Arc<MethodInfo>> {
+    fn get_method_by_name_desc(&self, name_desc: String) -> Option<Arc<MethodInfo>> {
         self.methods
             .iter()
             .find(|method| name_desc == method.name_desc())
@@ -211,6 +217,10 @@ impl Klass {
                         method.set_native_method(native_method)
                     })
             });
+    }
+
+    pub fn get_cl_init(&self) -> Option<Arc<MethodInfo>> {
+        self.get_method_by_name_desc("<clinit>()V".to_string())
     }
 
     pub fn methods(&self) -> &Vec<Arc<MethodInfo>> {

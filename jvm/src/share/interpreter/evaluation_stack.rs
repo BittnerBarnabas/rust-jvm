@@ -72,4 +72,15 @@ impl EvaluationStack {
     pub fn push(&mut self, value: JvmValue) {
         self.stack.push(value);
     }
+
+    pub fn stack(&self) -> &Vec<JvmValue> {
+        &self.stack
+    }
+}
+
+#[cfg(test)]
+impl EvaluationStack {
+    pub fn stack_mut(&mut self) -> &mut Vec<JvmValue> {
+        &mut self.stack
+    }
 }
